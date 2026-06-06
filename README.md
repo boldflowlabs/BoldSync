@@ -1,4 +1,5 @@
-# wacrm — CRM Template for WhatsApp
+# BoldSync
+WhatsApp automation platform — shared inbox, AI assistant, broadcast campaigns, and no-code workflows. Powered by BoldFlow Labs.
 
 > Self-hostable CRM template for WhatsApp® — shared inbox, contacts,
 > sales pipelines, broadcasts, and no-code automations. Fork it, brand
