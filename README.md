@@ -1,22 +1,13 @@
-# BoldSync
-WhatsApp automation platform — shared inbox, AI assistant, broadcast campaigns, and no-code workflows. Powered by BoldFlow Labs.
+# BoldSync — WhatsApp Automation Platform
 
-> Self-hostable CRM template for WhatsApp® — shared inbox, contacts,
-> sales pipelines, broadcasts, and no-code automations. Fork it, brand
-> it, host it.
-
-[![Deploy on Hostinger](https://img.shields.io/badge/Deploy_on-Hostinger-673DE6?style=for-the-badge&logo=hostinger&logoColor=white)](https://www.hostinger.com/web-apps-hosting)
+> AI-powered WhatsApp automation platform — shared inbox, AI assistant,
+> broadcast campaigns, and no-code workflows. Powered by BoldFlow Labs.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-violet.svg)](./LICENSE)
-[![CI](https://github.com/ArnasDon/wacrm/actions/workflows/ci.yml/badge.svg)](https://github.com/ArnasDon/wacrm/actions/workflows/ci.yml)
+[![CI](https://github.com/boldflowlabs/boldsync/actions/workflows/ci.yml/badge.svg)](https://github.com/boldflowlabs/boldsync/actions/workflows/ci.yml)
 [![Next.js 16](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs)](https://nextjs.org)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20Auth-3ecf8e?logo=supabase)](https://supabase.com)
-[![Stars](https://img.shields.io/github/stars/ArnasDon/wacrm?style=social)](https://github.com/ArnasDon/wacrm/stargazers)
-
-The marketing site and self-host docs live in a separate repo:
-[ArnasDon/wacrm-site](https://github.com/ArnasDon/wacrm-site)
-([wacrm.tech](https://wacrm.tech)). This repo is the product —
-clone or fork it to run your own CRM.
+[![Powered by BoldFlow Labs](https://img.shields.io/badge/Powered_by-BoldFlow_Labs-6366f1?style=flat)](https://boldflowlabs.com)
 
 ## What you get out of the box
 
@@ -30,74 +21,78 @@ clone or fork it to run your own CRM.
 - **No-code automations** — triggers on inbound messages, new
   contacts, keywords, or schedule; conditional branches, waits,
   tags, webhooks. Visual builder.
+- **AI assistant** — trained on your own docs, FAQs, and product
+  content. Answers customer questions in your voice, 24/7, without
+  going off-script.
+- **Knowledge base** — upload PDFs, paste FAQs, or add product info.
+  BoldSync reads it all and uses it to power every AI reply.
 - **Real-time dashboard** — response times, daily volume, pipeline
   value, cross-module activity feed.
 - **Account management** — email, password, avatar, global sign-out.
 
-## Why fork this?
-
-This is a **template**, not a product. Forking means you get:
-
-- **Full ownership** — your code, your Supabase project, your domain,
-  your data. No SaaS lock-in, no seat pricing, no trust dance.
-- **Full customisation** — add the fields your team needs, remove the
-  modules you don't, redesign anything. The stack is boring on
-  purpose (Next.js + Supabase + Tailwind) so the learning curve is
-  short.
-- **Zero ops to start** — Hostinger Managed Node.js deploys a fork in
-  a few clicks. No Docker, no Kubernetes, no infra team needed.
-- **Real security primitives** — token encryption (AES-256-GCM), RLS
-  on every table, HMAC-verified webhooks, CSP, rate limiting, CI
-  typecheck/build on every PR.
-
-Not a framework. Not an SDK. A concrete, working CRM you can stand up
-in an afternoon and make yours.
-
 ## Quick start
 
 ```bash
-# Fork on GitHub first: https://github.com/ArnasDon/wacrm → Fork
-git clone https://github.com/<your-username>/wacrm.git
-cd wacrm
+# Fork on GitHub first: https://github.com/boldflowlabs/boldsync → Fork
+git clone https://github.com/<your-username>/boldsync.git
+cd boldsync
 npm install
-cp .env.local.example .env.local   # fill in Supabase + Meta creds
+cp .env.local.example .env.local   # fill in Supabase + Meta + AI creds
 npm run dev
 ```
 
 Open <http://localhost:3000>. You'll be redirected to `/login` (or
 `/dashboard` if already signed in).
 
-## Documentation
+## Environment variables
 
-Full self-host documentation — Supabase migrations, WhatsApp Business
-API config, and production deploy — lives at
-**[wacrm.tech/docs](https://wacrm.tech/docs)**
-(source: [ArnasDon/wacrm-site](https://github.com/ArnasDon/wacrm-site)).
+Copy `.env.local.example` to `.env.local` and fill in:
 
-Key pages:
-- [Getting started](https://wacrm.tech/docs/getting-started)
-- [Supabase setup](https://wacrm.tech/docs/supabase-setup)
-- [WhatsApp setup](https://wacrm.tech/docs/whatsapp-setup)
-- [Environment variables](https://wacrm.tech/docs/environment-variables)
-- [Deploy on Hostinger](https://wacrm.tech/docs/deployment-hostinger)
-- [Architecture](https://wacrm.tech/docs/architecture)
-- [Troubleshooting](https://wacrm.tech/docs/troubleshooting)
+| Variable | Description |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | Your Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server only) |
+| `META_APP_ID` | Meta app ID |
+| `META_APP_SECRET` | Meta app secret |
+| `WHATSAPP_VERIFY_TOKEN` | Webhook verify token |
+| `ENCRYPTION_KEY` | AES-256-GCM key for token encryption |
+| `ANTHROPIC_API_KEY` | Claude API key — powers the AI assistant |
 
 ## Stack
 
 - **App** — Next.js 16 (App Router), React 19, TypeScript, Tailwind v4.
-- **Data** — Supabase (Postgres + Auth + Storage + RLS).
+- **Data** — Supabase (Postgres + Auth + Storage + RLS + pgvector).
 - **WhatsApp** — Meta Cloud API (official WhatsApp Business API).
+- **AI** — Anthropic Claude API with RAG via Supabase pgvector.
+
+## Documentation
+
+Full setup documentation — Supabase migrations, WhatsApp Business API
+config, AI assistant setup, and production deploy — lives in [`docs/`](./docs).
+
+Key pages:
+- [Getting started](./docs/getting-started.md)
+- [Supabase setup](./docs/supabase-setup.md)
+- [WhatsApp setup](./docs/whatsapp-setup.md)
+- [AI assistant setup](./docs/ai-assistant.md)
+- [Environment variables](./docs/environment-variables.md)
+- [Deploy on Hostinger](./docs/deployment-hostinger.md)
+- [Architecture](./docs/architecture.md)
+- [Troubleshooting](./docs/troubleshooting.md)
 
 ## Contributing
 
-This is a template, not a collaborative product — the expected flow is
-fork → customise → deploy, **not** upstream contribution. Bug reports
-and security issues are welcome; feature PRs often belong in your fork
-rather than here. Details in
+Bug reports and security issues are welcome. Feature PRs and major
+changes should be discussed in an issue first. Details in
 [`CONTRIBUTING.md`](./CONTRIBUTING.md) and
 [`.github/SECURITY.md`](./.github/SECURITY.md).
 
 ## License
 
 [MIT](./LICENSE). Fork it, brand it, host it.
+
+---
+
+Built by [BoldFlow Labs](https://boldflowlabs.com) — AI automation agency
+specialising in AI Voice Agents, AI Chatbots, and WhatsApp Automation.
