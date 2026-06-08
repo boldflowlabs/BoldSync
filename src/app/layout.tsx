@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -11,12 +11,17 @@ const inter = Inter({
   subsets: ["latin"],
 });
 
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-heading",
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: {
-    default: "wacrm",
-    template: "%s — wacrm",
+    default: "Boldsync",
+    template: "%s — Boldsync",
   },
-  description: "Self-hostable CRM template for WhatsApp.",
+  description: "Boldsync Powered by Boldflow Labs",
   robots: {
     index: false,
     follow: false,
@@ -37,12 +42,11 @@ export const viewport: Viewport = {
 };
 
 // Inline boot script — runs before React hydrates so the user's
-// chosen theme is on the <html> element before first paint. Without
-// this every page load flashes the default Violet for a frame before
-// the React tree mounts and applies the picked theme.
+// chosen theme is on the <html> element before first paint.
 //
 // Kept dependency-free (no imports, no JSX) — must be a string the
 // browser can run as a single <script>. Knowledge of valid theme IDs
+// is sourced from the THEME_IDS constant so adding a theme doesn't
 // is sourced from the THEME_IDS constant so adding a theme doesn't
 // silently break the boot path.
 const THEME_BOOT_SCRIPT = `
@@ -69,7 +73,8 @@ export default function RootLayout({
     <html
       lang="en"
       data-theme={DEFAULT_THEME}
-      className={`${inter.variable} h-full antialiased`}
+      className={`${inter.variable} ${plusJakartaSans.variable} h-full antialiased`}
+      suppressHydrationWarning
     >
       <head>
         <Script

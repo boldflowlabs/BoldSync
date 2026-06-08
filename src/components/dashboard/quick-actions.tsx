@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { UserPlus, Briefcase, Radio, Zap } from 'lucide-react'
 import type { ComponentType } from 'react'
+import { cn } from '@/lib/utils'
 
 // Quick-action shortcuts. Each navigates to the page that owns the
 // relevant "create" flow. We deliberately don't try to auto-open any
@@ -24,22 +25,31 @@ const ACTIONS: Action[] = [
 
 export function QuickActions() {
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-      {ACTIONS.map((a) => {
-        const Icon = a.icon
+    <div className="rounded-3xl p-5 glass">
+      <h2 className="mb-4 text-sm font-semibold text-foreground">Quick Actions</h2>
+      <div className="grid grid-cols-2 gap-3">
+      {ACTIONS.map((action) => {
         return (
           <Link
-            key={a.href}
-            href={a.href}
-            className="group flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 transition-colors hover:border-slate-700 hover:bg-slate-800/60"
+            key={action.href}
+            href={action.href}
+            className="group flex flex-col items-center gap-3 rounded-xl border border-border bg-card p-4 transition-all hover:border-primary/50 hover:shadow-md hover:shadow-primary/5"
           >
-            <div className={`flex h-9 w-9 items-center justify-center rounded-lg bg-slate-800 ${a.tint}`}>
-              <Icon className="h-4 w-4" />
+            <div
+              className={cn(
+                'flex h-12 w-12 items-center justify-center rounded-lg transition-colors',
+                'bg-muted text-foreground group-hover:bg-primary group-hover:text-primary-foreground',
+              )}
+            >
+              <action.icon className="h-5 w-5" />
             </div>
-            <span className="text-sm font-medium text-white">{a.label}</span>
+            <span className="text-sm font-medium text-foreground">
+              {action.label}
+            </span>
           </Link>
         )
       })}
+      </div>
     </div>
   )
 }

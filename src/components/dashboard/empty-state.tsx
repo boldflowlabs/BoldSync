@@ -11,26 +11,35 @@ import { cn } from '@/lib/utils'
 export function EmptyState({
   title = 'Not enough data yet',
   hint,
+  description = hint,
+  action,
   icon: Icon = BarChart3,
   className,
 }: {
   title?: string
   hint?: string
+  description?: string
+  action?: { label: string; onClick: () => void }
   icon?: ComponentType<{ className?: string }>
   className?: string
 }) {
   return (
-    <div
-      className={cn(
-        'flex h-full min-h-40 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-slate-800 bg-slate-900/40 px-4 py-6 text-center',
-        className,
-      )}
-    >
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-slate-800 text-slate-500">
-        <Icon className="h-5 w-5" />
+    <div className={cn("flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-card/50 px-6 py-12 text-center shadow-sm", className)}>
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+        <Icon className="h-6 w-6" />
       </div>
-      <p className="text-sm font-medium text-slate-300">{title}</p>
-      {hint && <p className="max-w-xs text-xs text-slate-500">{hint}</p>}
+      <h3 className="mt-4 text-sm font-semibold text-foreground">{title}</h3>
+      <p className="mt-2 text-sm text-muted-foreground max-w-[250px] leading-relaxed">
+        {description}
+      </p>
+      {action && (
+        <button
+          onClick={action.onClick}
+          className="mt-6 inline-flex items-center gap-2 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground shadow-sm transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+        >
+          {action.label}
+        </button>
+      )}
     </div>
   )
 }

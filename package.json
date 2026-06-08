@@ -1,17 +1,17 @@
 {
-  "name": "wacrm",
+  "name": "boldsync",
   "version": "0.2.0",
   "private": true,
-  "description": "Self-hostable CRM template for WhatsApp built on Next.js and Supabase — shared inbox, contacts, sales pipelines, broadcasts, and no-code automations.",
+  "description": "Boldsync Powered by Boldflow Labs",
   "license": "MIT",
-  "author": "Arnas Donauskas",
-  "homepage": "https://github.com/ArnasDon/wacrm",
+  "author": "Boldflow Labs",
+  "homepage": "https://boldsync.com",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/ArnasDon/wacrm.git"
+    "url": "git+https://github.com/boldflowlabs/boldsync.git"
   },
   "bugs": {
-    "url": "https://github.com/ArnasDon/wacrm/issues"
+    "url": "https://github.com/boldflowlabs/boldsync/issues"
   },
   "keywords": [
     "crm",
@@ -22,7 +22,8 @@
     "automation",
     "broadcast",
     "self-hosted",
-    "template"
+    "template",
+    "boldsync"
   ],
   "engines": {
     "node": ">=20.0.0"
@@ -48,6 +49,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
+    "framer-motion": "^12.40.0",
     "lucide-react": "^1.8.0",
     "next": "16.2.6",
     "react": "19.2.4",

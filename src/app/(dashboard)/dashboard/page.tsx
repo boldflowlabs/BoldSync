@@ -9,6 +9,8 @@ import {
   Send,
 } from 'lucide-react'
 
+import { useAuth } from '@/hooks/use-auth'
+
 import {
   loadActivity,
   loadConversationsSeries,
@@ -39,9 +41,6 @@ export default function DashboardPage() {
   const [metricsLoading, setMetricsLoading] = useState(true)
 
   const [range, setRange] = useState<RangeDays>(30)
-  // Keep a cache per range so switching tabs doesn't re-fetch what we
-  // already have. Ranges the user hasn't opened yet stay null and
-  // trigger a fetch on first view.
   const [series, setSeries] = useState<Record<RangeDays, ConversationsSeriesPoint[] | null>>({
     7: null,
     30: null,
@@ -61,9 +60,6 @@ export default function DashboardPage() {
   const loadAll = useCallback(() => {
     const db = createClient()
 
-    // Kick everything off in parallel. Each block has its own
-    // setState + finally so a slow query doesn't hold up faster
-    // sections — each widget shows its own skeleton independently.
     void loadMetrics(db)
       .then((m) => setMetrics(m))
       .catch((err) => console.error('[dashboard] metrics failed:', err))
@@ -84,9 +80,6 @@ export default function DashboardPage() {
       .catch((err) => console.error('[dashboard] response time failed:', err))
       .finally(() => setResponseTimeLoading(false))
 
-    // Fetch up to 50 so the biggest page-size option in the feed
-    // (50 rows) is already in memory — switching sizes then becomes
-    // a pure client-side slice with no extra round trip.
     void loadActivity(db, 50)
       .then((a) => setActivity(a))
       .catch((err) => console.error('[dashboard] activity failed:', err))
@@ -97,10 +90,6 @@ export default function DashboardPage() {
     loadAll()
   }, [loadAll])
 
-  // Range switch handler — kept in an event callback (not an effect)
-  // so the setState calls stay out of the react-hooks/set-state-in-effect
-  // rule's way. The cached bucket check means switching back to a
-  // previously-viewed range is instant and doesn't re-fetch.
   const handleRangeChange = useCallback(
     (r: RangeDays) => {
       setRange(r)
@@ -115,18 +104,31 @@ export default function DashboardPage() {
     [series],
   )
 
+  const { profile } = useAuth()
+
+  const [greeting, setGreeting] = useState("Good morning")
+
+  useEffect(() => {
+    const hour = new Date().getHours()
+    if (hour < 12) setGreeting("Good morning")
+    else if (hour < 17) setGreeting("Good afternoon")
+    else setGreeting("Good evening")
+  }, [])
+
   return (
-    <div className="space-y-5">
+    <div className="flex flex-col gap-8 pb-12 w-full animate-in fade-in duration-500">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-        <p className="mt-1 text-sm text-slate-400">
-          Live analytics across conversations, contacts, deals, broadcasts, and automations.
+      <div className="flex flex-col gap-2 pt-6 pb-4">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          {greeting}{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}.
+        </h1>
+        <p className="text-muted-foreground text-sm">
+          Here is an overview of your workspace today.
         </p>
       </div>
 
-      {/* Metric cards */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Metrics Row */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         {metricsLoading || !metrics ? (
           Array.from({ length: 4 }).map((_, i) => <SkeletonCard key={i} />)
         ) : (
@@ -137,7 +139,7 @@ export default function DashboardPage() {
               icon={MessageSquare}
               delta={{
                 sign: metrics.activeConversations.previous,
-                label: deltaLabel(metrics.activeConversations.previous, 'new today vs yesterday'),
+                label: deltaLabel(metrics.activeConversations.previous, 'new today'),
               }}
             />
             <MetricCard
@@ -145,11 +147,10 @@ export default function DashboardPage() {
               value={metrics.newContactsToday.current.toLocaleString()}
               icon={UserPlus}
               delta={{
-                sign:
-                  metrics.newContactsToday.current - metrics.newContactsToday.previous,
+                sign: metrics.newContactsToday.current - metrics.newContactsToday.previous,
                 label: deltaLabel(
                   metrics.newContactsToday.current - metrics.newContactsToday.previous,
-                  'vs yesterday',
+                  'vs yesterday'
                 ),
               }}
             />
@@ -164,11 +165,10 @@ export default function DashboardPage() {
               value={metrics.messagesSentToday.current.toLocaleString()}
               icon={Send}
               delta={{
-                sign:
-                  metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
+                sign: metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
                 label: deltaLabel(
                   metrics.messagesSentToday.current - metrics.messagesSentToday.previous,
-                  'vs yesterday',
+                  'vs yesterday'
                 ),
               }}
             />
@@ -176,40 +176,47 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Quick actions */}
-      <QuickActions />
-
-      {/* Charts row */}
-      {/* items-stretch (the grid default) stretches the two columns to
-          match the tallest sibling; adding h-full on each wrapper and
-          on the inner panels makes both cards actually fill that
-          stretched height so their rounded borders line up. Without
-          this, the pipeline card rendered at its natural (shorter)
-          height while the line chart drove the row height. */}
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
-        <div className="h-full lg:col-span-3">
-          <ConversationsChart
-            series={series}
-            loading={seriesLoading}
-            range={range}
-            onRangeChange={handleRangeChange}
-          />
+      {/* Main Layout Grid */}
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-7 mt-2">
+        {/* Left Column - Main Charts */}
+        <div className="col-span-1 md:col-span-2 lg:col-span-4 flex flex-col gap-4">
+          <div className="min-h-[350px] flex flex-col">
+            <ConversationsChart
+              series={series}
+              loading={seriesLoading}
+              range={range}
+              onRangeChange={handleRangeChange}
+            />
+          </div>
+          
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+            <div className="min-h-[250px] flex flex-col">
+              <ResponseTimeChart data={responseTime} loading={responseTimeLoading} />
+            </div>
+            <div className="min-h-[250px] flex flex-col">
+              <PipelineDonut data={pipeline} loading={pipelineLoading} />
+            </div>
+          </div>
         </div>
-        <div className="h-full lg:col-span-2">
-          <PipelineDonut data={pipeline} loading={pipelineLoading} />
+
+        {/* Right Column - Feed & Actions */}
+        <div className="col-span-1 md:col-span-2 lg:col-span-3 flex flex-col gap-4">
+          <QuickActions />
+          
+          <div className="rounded-xl border bg-card text-card-foreground shadow-sm flex-1 flex flex-col overflow-hidden">
+            <div className="p-6 pb-2 flex items-center justify-between">
+              <h3 className="font-semibold leading-none tracking-tight">Activity Feed</h3>
+              <div className="flex h-2 w-2 rounded-full bg-green-500/80"></div>
+            </div>
+            <div className="p-0 flex-1 overflow-y-auto">
+              <ActivityFeed items={activity} loading={activityLoading} />
+            </div>
+          </div>
         </div>
       </div>
-
-      {/* Response time */}
-      <ResponseTimeChart data={responseTime} loading={responseTimeLoading} />
-
-      {/* Activity feed */}
-      <ActivityFeed items={activity} loading={activityLoading} />
     </div>
   )
 }
-
-// ------------------------------------------------------------
 
 function formatCurrency(v: number): string {
   return new Intl.NumberFormat(undefined, {

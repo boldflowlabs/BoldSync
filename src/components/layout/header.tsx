@@ -16,6 +16,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useTheme } from "@/hooks/use-theme";
+import { Moon, Sun } from "lucide-react";
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -44,6 +46,7 @@ interface HeaderProps {
 export function Header({ onOpenSidebar }: HeaderProps) {
   const pathname = usePathname();
   const { profile, signOut } = useAuth();
+  const { theme, setTheme } = useTheme();
   const title = getPageTitle(pathname);
 
   const initial =
@@ -52,25 +55,33 @@ export function Header({ onOpenSidebar }: HeaderProps) {
     "U";
 
   return (
-    <header className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-800 bg-slate-950 px-4 lg:px-6">
+    <header className="flex h-16 shrink-0 items-center justify-between gap-3 border-b border-border/60 bg-transparent px-4 lg:px-8">
       <div className="flex min-w-0 items-center gap-2">
         {/* Hamburger — mobile only. 44×44 hit target per Apple HIG. */}
         <button
           type="button"
           onClick={onOpenSidebar}
           aria-label="Open menu"
-          className="flex h-10 w-10 items-center justify-center rounded-md text-slate-300 transition-colors hover:bg-slate-800 hover:text-white lg:hidden"
+          className="flex h-10 w-10 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-accent hover:text-accent-foreground lg:hidden"
         >
           <Menu className="h-5 w-5" />
         </button>
-        <h1 className="truncate text-base font-semibold text-white sm:text-lg">
+        <h1 className="truncate text-base font-semibold text-foreground sm:text-lg">
           {title}
         </h1>
       </div>
 
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+          className="flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+        >
+          {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </button>
+
       <DropdownMenu>
         <DropdownMenuTrigger
-          className="flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-slate-800/70 focus:bg-slate-800/70 focus:outline-none data-popup-open:bg-slate-800/70 sm:gap-3 sm:pl-1 sm:pr-3"
+          className="flex items-center gap-2 rounded-md px-1 py-1 transition-colors hover:bg-accent/70 focus:bg-accent/70 focus:outline-none data-popup-open:bg-accent/70 sm:gap-3 sm:pl-1 sm:pr-3"
           aria-label="Open account menu"
         >
           <Avatar className="size-8">
@@ -84,29 +95,29 @@ export function Header({ onOpenSidebar }: HeaderProps) {
               {initial}
             </AvatarFallback>
           </Avatar>
-          <span className="hidden text-sm font-medium text-white sm:inline">
+          <span className="hidden text-sm font-medium text-foreground sm:inline">
             {profile?.full_name ?? "User"}
           </span>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="end"
           sideOffset={6}
-          className="min-w-56 bg-slate-900 text-slate-100 ring-slate-700"
+          className="min-w-56 bg-popover text-popover-foreground ring-border"
         >
           <div className="px-2 py-1.5">
-            <p className="truncate text-sm font-medium text-white">
+            <p className="truncate text-sm font-medium text-foreground">
               {profile?.full_name ?? "User"}
             </p>
-            <p className="truncate text-xs text-slate-400">
+            <p className="truncate text-xs text-muted-foreground">
               {profile?.email ?? ""}
             </p>
           </div>
-          <DropdownMenuSeparator className="bg-slate-800" />
+          <DropdownMenuSeparator className="bg-border" />
           <DropdownMenuItem
             render={
               <Link
                 href="/settings?tab=profile"
-                className="text-slate-200 focus:bg-slate-800 focus:text-white"
+                className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
               />
             }
           >
@@ -117,23 +128,24 @@ export function Header({ onOpenSidebar }: HeaderProps) {
             render={
               <Link
                 href="/settings?tab=whatsapp"
-                className="text-slate-200 focus:bg-slate-800 focus:text-white"
+                className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
               />
             }
           >
             <SettingsIcon className="size-4" />
             Settings
           </DropdownMenuItem>
-          <DropdownMenuSeparator className="bg-slate-800" />
+          <DropdownMenuSeparator className="bg-border" />
           <DropdownMenuItem
             onClick={signOut}
-            className="text-slate-200 focus:bg-slate-800 focus:text-white"
+            className="text-popover-foreground focus:bg-accent focus:text-accent-foreground"
           >
             <LogOut className="size-4" />
             Sign out
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+      </div>
     </header>
   );
 }
