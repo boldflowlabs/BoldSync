@@ -1,3 +1,19 @@
+export interface Workspace {
+  id: string;
+  name: string;
+  owner_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface WorkspaceMember {
+  id: string;
+  workspace_id: string;
+  user_id: string;
+  role: 'owner' | 'admin' | 'member';
+  created_at: string;
+}
+
 export interface Profile {
   id: string;
   user_id: string;
@@ -18,6 +34,7 @@ export interface Profile {
 
 export interface Contact {
   id: string;
+  workspace_id: string;
   user_id: string;
   phone: string;
   name?: string;
@@ -30,6 +47,7 @@ export interface Contact {
 
 export interface Tag {
   id: string;
+  workspace_id: string;
   user_id: string;
   name: string;
   color: string;
@@ -44,6 +62,7 @@ export interface ContactTag {
 
 export interface CustomField {
   id: string;
+  workspace_id: string;
   user_id: string;
   field_name: string;
   field_type: string;
@@ -60,6 +79,7 @@ export interface ContactCustomValue {
 
 export interface ContactNote {
   id: string;
+  workspace_id: string;
   contact_id: string;
   user_id: string;
   note_text: string;
@@ -70,6 +90,7 @@ export type ConversationStatus = 'open' | 'pending' | 'closed';
 
 export interface Conversation {
   id: string;
+  workspace_id: string;
   user_id: string;
   contact_id: string;
   status: ConversationStatus;
@@ -131,6 +152,7 @@ export interface MessageReaction {
 
 export interface WhatsAppConfig {
   id: string;
+  workspace_id: string;
   user_id: string;
   phone_number_id: string;
   waba_id?: string;
@@ -142,6 +164,7 @@ export interface WhatsAppConfig {
 
 export interface MessageTemplate {
   id: string;
+  workspace_id: string;
   user_id: string;
   name: string;
   category: 'Marketing' | 'Utility' | 'Authentication';
@@ -157,6 +180,7 @@ export interface MessageTemplate {
 
 export interface Pipeline {
   id: string;
+  workspace_id: string;
   user_id: string;
   name: string;
   created_at: string;
@@ -175,6 +199,7 @@ export type DealStatus = 'open' | 'won' | 'lost';
 
 export interface Deal {
   id: string;
+  workspace_id: string;
   user_id: string;
   pipeline_id: string;
   stage_id: string;
@@ -203,6 +228,7 @@ export type RecipientStatus = 'pending' | 'sent' | 'delivered' | 'read' | 'repli
 
 export interface Broadcast {
   id: string;
+  workspace_id: string;
   user_id: string;
   name: string;
   template_name: string;
@@ -367,6 +393,7 @@ export type AutomationStepConfig =
 
 export interface Automation {
   id: string;
+  workspace_id: string;
   user_id: string;
   name: string;
   description?: string;
@@ -399,6 +426,7 @@ export interface AutomationLogStepResult {
 
 export interface AutomationLog {
   id: string;
+  workspace_id: string;
   automation_id: string;
   user_id: string;
   contact_id: string | null;

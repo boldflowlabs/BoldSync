@@ -473,6 +473,65 @@ export function MessageThread({
     [conversation, onNewMessage, onUpdateMessage]
   );
 
+  const handleSendMedia = useCallback(
+    async (
+      file: File,
+      type: "image" | "document" | "video" | "audio",
+      caption?: string,
+      replyToId?: string
+    ) => {
+      if (!conversation) return;
+
+      const tempId = `temp-${Date.now()}`;
+
+      // Optimistic update for media
+      const optimisticMsg: Message = {
+        id: tempId,
+        conversation_id: conversation.id,
+        sender_type: "agent",
+        content_type: type,
+        content_text: caption || undefined,
+        status: "sending",
+        created_at: new Date().toISOString(),
+        reply_to_message_id: replyToId,
+      };
+      onNewMessage(optimisticMsg);
+      setReplyTo(null);
+
+      try {
+        const formData = new FormData();
+        formData.append("conversation_id", conversation.id);
+        formData.append("message_type", type);
+        formData.append("file", file);
+        if (caption) formData.append("caption", caption);
+        if (replyToId) formData.append("reply_to_message_id", replyToId);
+
+        const res = await fetch("/api/whatsapp/send-media", {
+          method: "POST",
+          body: formData,
+        });
+
+        const payload = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          const reason = payload?.error || `HTTP ${res.status}`;
+          console.error("Failed to send media:", reason);
+          toast.error(`Failed to send media: ${reason}`);
+          onUpdateMessage(tempId, { status: "failed" });
+          return;
+        }
+
+        onUpdateMessage(tempId, { status: "sent" });
+      } catch (err) {
+        console.error("Failed to send media:", err);
+        const reason = err instanceof Error ? err.message : "network error";
+        toast.error(`Failed to send media: ${reason}`);
+        onUpdateMessage(tempId, { status: "failed" });
+      }
+    },
+    [conversation, onNewMessage, onUpdateMessage]
+  );
+
   const handleStatusChange = useCallback(
     async (status: ConversationStatus) => {
       if (!conversation) return;
@@ -925,6 +984,7 @@ export function MessageThread({
         conversationId={conversation.id}
         sessionExpired={sessionInfo.expired}
         onSend={handleSend}
+        onSendMedia={handleSendMedia}
         onOpenTemplates={handleOpenTemplates}
         replyTo={replyTo}
         onClearReply={() => setReplyTo(null)}

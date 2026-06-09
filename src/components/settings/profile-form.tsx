@@ -36,7 +36,7 @@ const ALLOWED_MIME = new Set([
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export function ProfileForm() {
-  const { user, profile, refreshProfile } = useAuth();
+  const { user, profile, profileLoading, refreshProfile } = useAuth();
   const supabase = createClient();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -145,11 +145,13 @@ export function ProfileForm() {
       // Persist name + avatar to profiles.
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({
+        .upsert({
+          user_id: user.id,
           full_name: trimmedName,
+          email: profile?.email || user.email || trimmedEmail,
           avatar_url: nextAvatarUrl,
-        })
-        .eq('user_id', user.id);
+        }, { onConflict: 'user_id' });
+        
       if (updateError) {
         throw new Error(`Save failed: ${updateError.message}`);
       }
@@ -160,7 +162,8 @@ export function ProfileForm() {
       // after the user clicks the link (handled by the handle_new_user
       // trigger pattern in production deployments).
       let emailSent = false;
-      if (trimmedEmail.toLowerCase() !== profile.email.toLowerCase()) {
+      const currentEmail = profile?.email || user.email;
+      if (trimmedEmail.toLowerCase() !== (currentEmail ?? '').toLowerCase()) {
         const { error: emailError } = await supabase.auth.updateUser({
           email: trimmedEmail,
         });
@@ -195,11 +198,12 @@ export function ProfileForm() {
   };
 
   const dirty =
-    !!profile &&
-    (fullName.trim() !== (profile.full_name ?? '') ||
-      email.trim().toLowerCase() !== (profile.email ?? '').toLowerCase() ||
-      pendingAvatar !== null ||
-      removeAvatar);
+    (!profile && (fullName.trim() !== '' || email.trim() !== '')) ||
+    (!!profile &&
+      (fullName.trim() !== (profile.full_name ?? '') ||
+        email.trim().toLowerCase() !== (profile.email ?? '').toLowerCase() ||
+        pendingAvatar !== null ||
+        removeAvatar));
 
   const joined = user?.created_at
     ? new Date(user.created_at).toLocaleDateString(undefined, {
@@ -333,15 +337,22 @@ export function ProfileForm() {
             </dl>
           </div>
 
-          {!profile && (
+          {!profile && profileLoading && (
             <p className="flex items-center gap-2 text-sm text-muted-foreground">
-              <CircleAlert className="size-4" />
+              <Loader2 className="size-4 animate-spin" />
               Loading your profile…
             </p>
           )}
 
+          {!profile && !profileLoading && (
+            <p className="flex items-center gap-2 text-sm text-amber-500">
+              <CircleAlert className="size-4" />
+              Profile details missing. Please save to create your profile.
+            </p>
+          )}
+
           <div className="flex justify-end">
-            <Button type="submit" disabled={saving || !dirty || !profile}>
+            <Button type="submit" disabled={saving || !dirty}>
               {saving ? (
                 <>
                   <Loader2 className="size-4 animate-spin" />

@@ -557,3 +557,103 @@ export async function downloadMedia(
   const buffer = Buffer.from(await response.arrayBuffer())
   return { buffer, contentType }
 }
+
+export interface UploadMediaToMetaArgs {
+  phoneNumberId: string
+  accessToken: string
+  file: Blob | File
+}
+
+/**
+ * Upload a raw file buffer directly to Meta's servers for sending.
+ * Step one of the outbound media flow.
+ */
+export async function uploadMediaToMeta(
+  args: UploadMediaToMetaArgs
+): Promise<string> {
+  const { phoneNumberId, accessToken, file } = args
+  const url = `${META_API_BASE}/${phoneNumberId}/media`
+
+  const formData = new FormData()
+  formData.append('messaging_product', 'whatsapp')
+  formData.append('file', file)
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: formData,
+  })
+
+  if (!response.ok) {
+    await throwMetaError(response, `Media upload failed: ${response.status}`)
+  }
+  const data = await response.json()
+  if (!data.id) throw new Error('No media ID returned from Meta')
+  return data.id
+}
+
+export interface SendMediaMessageArgs {
+  phoneNumberId: string
+  accessToken: string
+  to: string
+  type: 'image' | 'document' | 'audio' | 'video'
+  mediaId: string
+  caption?: string
+  filename?: string
+  contextMessageId?: string
+}
+
+/**
+ * Send a media message using a mediaId obtained from uploadMediaToMeta.
+ */
+export async function sendMediaMessage(
+  args: SendMediaMessageArgs
+): Promise<MetaSendResult> {
+  const {
+    phoneNumberId,
+    accessToken,
+    to,
+    type,
+    mediaId,
+    caption,
+    filename,
+    contextMessageId,
+  } = args
+
+  const url = `${META_API_BASE}/${phoneNumberId}/messages`
+
+  const mediaPayload: Record<string, unknown> = { id: mediaId }
+  if (caption && (type === 'image' || type === 'video' || type === 'document')) {
+    mediaPayload.caption = caption
+  }
+  if (filename && type === 'document') {
+    mediaPayload.filename = filename
+  }
+
+  const body: Record<string, unknown> = {
+    messaging_product: 'whatsapp',
+    recipient_type: 'individual',
+    to,
+    type,
+    [type]: mediaPayload,
+  }
+
+  if (contextMessageId) {
+    body.context = { message_id: contextMessageId }
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${accessToken}`,
+    },
+    body: JSON.stringify(body),
+  })
+
+  if (!response.ok) {
+    await throwMetaError(response, `Meta API error: ${response.status}`)
+  }
+  const data = await response.json()
+  return { messageId: data.messages[0].id }
+}

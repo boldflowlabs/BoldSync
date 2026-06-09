@@ -13,7 +13,8 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { MessageSquare, CheckCircle } from "lucide-react";
+import { Zap, CheckCircle } from "lucide-react";
+import { toast } from "sonner";
 
 export default function SignupPage() {
   const [fullName, setFullName] = useState("");
@@ -31,11 +32,13 @@ export default function SignupPage() {
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
+      toast.error("Passwords do not match");
       return;
     }
 
     if (password.length < 6) {
       setError("Password must be at least 6 characters");
+      toast.error("Password must be at least 6 characters");
       return;
     }
 
@@ -53,146 +56,134 @@ export default function SignupPage() {
 
     if (error) {
       setError(error.message);
+      toast.error(error.message);
       setLoading(false);
       return;
     }
 
+    toast.success("Account created! Please check your email.");
     setSuccess(true);
     setLoading(false);
   };
 
   if (success) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background px-4">
-        <Card className="w-full max-w-md border-border bg-background">
-          <CardHeader className="items-center text-center">
-            <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-              <CheckCircle className="h-6 w-6 text-primary" />
-            </div>
-            <CardTitle className="text-xl text-foreground">
-              Check your email
-            </CardTitle>
-            <CardDescription className="text-muted-foreground">
-              We&apos;ve sent a confirmation link to{" "}
-              <span className="text-foreground">{email}</span>. Please check your
-              inbox and click the link to verify your account.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Link href="/login">
-              <Button
-                variant="outline"
-                className="w-full border-border text-foreground hover:bg-muted hover:text-foreground"
-              >
-                Back to sign in
-              </Button>
-            </Link>
-          </CardContent>
-        </Card>
+      <div className="flex flex-col animate-in fade-in duration-500">
+        <div className="mb-8 flex flex-col items-center text-center">
+          <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 shadow-sm shadow-blue-600/20">
+            <CheckCircle className="h-5 w-5 text-white" />
+          </div>
+          <h1 className="text-xl font-semibold tracking-tight text-foreground">Check your email</h1>
+        </div>
+
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground leading-relaxed mb-8">
+            We&apos;ve sent a confirmation link to{" "}
+            <span className="font-medium text-foreground">{email}</span>. Please check your
+            inbox and click the link to verify your account.
+          </p>
+          <Link href="/login">
+            <Button
+              variant="outline"
+              className="w-full h-9 rounded-md shadow-none font-medium transition-colors"
+            >
+              Back to sign in
+            </Button>
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background px-4">
-      <Card className="w-full max-w-md border-border bg-background">
-        <CardHeader className="items-center text-center">
-          <div className="mb-2 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-            <MessageSquare className="h-6 w-6 text-primary" />
+    <div className="flex flex-col animate-in fade-in duration-500">
+      <div className="mb-8 flex flex-col items-center text-center">
+        <div className="mb-6 flex h-10 w-10 items-center justify-center rounded-lg bg-blue-600 shadow-sm shadow-blue-600/20">
+          <Zap className="h-5 w-5 text-white" />
+        </div>
+        <h1 className="text-xl font-semibold tracking-tight text-foreground">Create an account</h1>
+        <p className="mt-1.5 text-sm text-muted-foreground">
+          Enter your details to get started with BoldSync
+        </p>
+      </div>
+
+      <form onSubmit={handleSignup} className="flex flex-col gap-4">
+        {error && (
+          <div className="rounded-md border border-red-500/20 bg-red-500/10 px-3 py-2 text-sm text-red-400">
+            {error}
           </div>
-          <CardTitle className="text-xl text-foreground">Create account</CardTitle>
-          <CardDescription className="text-muted-foreground">
-            Get started with CRM Template for WhatsApp
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignup} className="flex flex-col gap-4">
-            {error && (
-              <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
-                {error}
-              </div>
-            )}
+        )}
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="fullName" className="text-foreground">
-                Full name
-              </Label>
-              <Input
-                id="fullName"
-                type="text"
-                placeholder="John Doe"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
-            </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="fullName" className="text-xs font-medium text-foreground">Full name</Label>
+          <Input
+            id="fullName"
+            type="text"
+            placeholder="John Doe"
+            value={fullName}
+            onChange={(e) => setFullName(e.target.value)}
+            required
+            className="h-9 rounded-md bg-transparent shadow-none"
+          />
+        </div>
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="email" className="text-foreground">
-                Email
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
-            </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="email" className="text-xs font-medium text-foreground">Email</Label>
+          <Input
+            id="email"
+            type="email"
+            placeholder="m@example.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="h-9 rounded-md bg-transparent shadow-none"
+          />
+        </div>
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="password" className="text-foreground">
-                Password
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="At least 6 characters"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
-            </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="password" className="text-xs font-medium text-foreground">Password</Label>
+          <Input
+            id="password"
+            type="password"
+            placeholder="At least 6 characters"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="h-9 rounded-md bg-transparent shadow-none"
+          />
+        </div>
 
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="confirmPassword" className="text-foreground">
-                Confirm password
-              </Label>
-              <Input
-                id="confirmPassword"
-                type="password"
-                placeholder="Repeat your password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                required
-                className="border-border bg-muted text-foreground placeholder:text-muted-foreground focus-visible:border-primary focus-visible:ring-primary/20"
-              />
-            </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="confirmPassword" className="text-xs font-medium text-foreground">Confirm password</Label>
+          <Input
+            id="confirmPassword"
+            type="password"
+            placeholder="Repeat your password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            required
+            className="h-9 rounded-md bg-transparent shadow-none"
+          />
+        </div>
 
-            <Button
-              type="submit"
-              disabled={loading}
-              className="mt-2 h-10 w-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
-            >
-              {loading ? "Creating account..." : "Create account"}
-            </Button>
-          </form>
+        <Button
+          type="submit"
+          disabled={loading}
+          className="mt-2 h-9 w-full rounded-md font-medium shadow-none"
+        >
+          {loading ? "Creating account..." : "Create account"}
+        </Button>
+      </form>
 
-          <p className="mt-6 text-center text-sm text-muted-foreground">
-            Already have an account?{" "}
-            <Link
-              href="/login"
-              className="text-primary hover:text-primary/80"
-            >
-              Sign in
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+      <p className="mt-8 text-center text-sm text-muted-foreground">
+        Already have an account?{" "}
+        <Link
+          href="/login"
+          className="font-medium text-foreground underline underline-offset-4 hover:text-foreground transition-colors"
+        >
+          Sign in
+        </Link>
+      </p>
     </div>
   );
 }

@@ -70,14 +70,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Shared across init, auth-state-change listener, and the exposed
   // refreshProfile() callback. Reads the current session's user id and
   // pulls the matching profile row.
-  const fetchProfile = useCallback(async (userId: string) => {
+  const fetchProfile = useCallback(async (currentUser: User) => {
     const supabase = createClient();
     setProfileLoading(true);
     try {
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from("profiles")
         .select("id, full_name, email, avatar_url, role, beta_features")
-        .eq("user_id", userId)
+        .eq("user_id", currentUser.id)
         .maybeSingle();
 
       if (error) {
@@ -90,6 +90,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
       }
 
+      if (!data && !error) {
+        // Profile is missing, possibly due to a trigger race condition or error.
+        // Try to insert it manually.
+        const { data: newProfile, error: insertError } = await supabase
+          .from("profiles")
+          .insert({
+            user_id: currentUser.id,
+            full_name: currentUser.user_metadata?.full_name || '',
+            email: currentUser.email || '',
+          })
+          .select("id, full_name, email, avatar_url, role, beta_features")
+          .maybeSingle();
+          
+        if (newProfile) {
+          data = newProfile;
+        } else if (insertError) {
+          if (insertError.code === '23505') {
+            // Replication delay: the row exists but the first SELECT missed it.
+            // Wait briefly and retry the SELECT.
+            await new Promise(resolve => setTimeout(resolve, 800));
+            const { data: retryData } = await supabase
+              .from("profiles")
+              .select("id, full_name, email, avatar_url, role, beta_features")
+              .eq("user_id", currentUser.id)
+              .maybeSingle();
+            
+            if (retryData) {
+              data = retryData;
+            } else {
+              console.error("[AuthProvider] Profile still missing after retry");
+            }
+          } else {
+            console.error("[AuthProvider] Profile insert fallback failed:", insertError);
+          }
+        }
+      }
+
       if (data) {
         // `beta_features` is `NOT NULL DEFAULT ARRAY[]` in the DB, but
         // narrow defensively in case the column hasn't been migrated yet
@@ -99,6 +136,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           ...data,
           beta_features: data.beta_features ?? [],
         });
+      } else {
+        // Explicitly set null if we truly failed to find or create one
+        setProfile(null);
       }
     } catch (err) {
       console.error("[AuthProvider] fetchProfile threw:", err);
@@ -137,7 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           // (header, sidebar) can render from the user object alone,
           // profile enriches async. Callers that need to branch on
           // profile data gate on `profileLoading` instead.
-          fetchProfile(currentUser.id);
+          fetchProfile(currentUser);
         } else {
           // No user → no profile to load. Flip profileLoading off so
           // pages that gate on it don't wait forever on the logged-out
@@ -162,7 +202,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(currentUser);
 
       if (currentUser) {
-        fetchProfile(currentUser.id);
+        fetchProfile(currentUser);
       } else {
         setProfile(null);
         setProfileLoading(false);
@@ -187,9 +227,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const refreshProfile = useCallback(async () => {
-    if (!user?.id) return;
-    await fetchProfile(user.id);
-  }, [user?.id, fetchProfile]);
+    if (!user) return;
+    await fetchProfile(user);
+  }, [user, fetchProfile]);
 
   return (
     <AuthContext.Provider

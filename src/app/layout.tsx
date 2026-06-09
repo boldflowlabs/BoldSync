@@ -87,13 +87,14 @@ export default function RootLayout({
         <ThemeProvider>
           {children}
           <Toaster
-            theme="dark"
-            position="top-right"
+            position="bottom-right"
             toastOptions={{
               style: {
-                background: "rgb(30 41 59)",
-                border: "1px solid rgb(51 65 85)",
-                color: "white",
+                background: "var(--background)",
+                color: "var(--foreground)",
+                borderColor: "var(--border)",
+                borderWidth: "1px",
+                borderStyle: "solid",
               },
             }}
           />

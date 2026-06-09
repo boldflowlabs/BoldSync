@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
-import { CornerUpLeft, Copy, SmilePlus } from "lucide-react";
+import { useState, useEffect, type ReactNode } from "react";
+import { CornerUpLeft, Copy, SmilePlus, Info, CornerUpRight, Pin, Sparkles, Star, CheckSquare, Download, Share2, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -34,16 +34,42 @@ export function MessageActions({
   children,
 }: MessageActionsProps) {
   // Touch devices have no hover. Long-press fires `contextmenu`; we capture
-  // it, suppress the native menu, and pin the toolbar open until the user
-  // interacts elsewhere.
+  // it to open our custom Context Menu instead of the native one.
   const [touchOpen, setTouchOpen] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number } | null>(null);
+
+  // Close context menu on outside click or scroll
+  useEffect(() => {
+    if (!contextMenu) return;
+    const closeMenu = () => setContextMenu(null);
+    window.addEventListener("click", closeMenu);
+    window.addEventListener("scroll", closeMenu, { capture: true });
+    window.addEventListener("resize", closeMenu);
+    return () => {
+      window.removeEventListener("click", closeMenu);
+      window.removeEventListener("scroll", closeMenu, { capture: true });
+      window.removeEventListener("resize", closeMenu);
+    };
+  }, [contextMenu]);
 
   const isAgent =
     message.sender_type === "agent" || message.sender_type === "bot";
 
   const handleContextMenu = (e: React.MouseEvent) => {
     e.preventDefault();
+    // Calculate position, ensuring the menu doesn't flow off-screen
+    let x = e.clientX;
+    let y = e.clientY;
+    
+    // Rough estimate of menu dimensions to prevent overflow
+    const menuWidth = 200;
+    const menuHeight = 400;
+    
+    if (x + menuWidth > window.innerWidth) x = window.innerWidth - menuWidth - 10;
+    if (y + menuHeight > window.innerHeight) y = window.innerHeight - menuHeight - 10;
+
+    setContextMenu({ x, y });
     setTouchOpen(true);
   };
 
@@ -66,11 +92,18 @@ export function MessageActions({
     onReact(emoji);
     setPickerOpen(false);
     setTouchOpen(false);
+    setContextMenu(null);
   };
 
   const handleReply = () => {
     onReply();
     setTouchOpen(false);
+    setContextMenu(null);
+  };
+
+  const handleComingSoon = (action: string) => {
+    toast.info(`${action} is coming soon!`);
+    setContextMenu(null);
   };
 
   // Row alignment lives here (not in MessageBubble) so the `group/actions`
@@ -138,6 +171,91 @@ export function MessageActions({
         </button>
       </div>
       </div>
+
+      {/* Custom Right-Click Context Menu */}
+      {contextMenu && (
+        <div
+          className="fixed z-50 min-w-[200px] overflow-hidden rounded-md border border-border bg-popover p-1 shadow-md animate-in fade-in-0 zoom-in-95"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onClick={(e) => e.stopPropagation()} // prevent immediate close on inner clicks
+        >
+          <div className="flex flex-col text-sm text-popover-foreground">
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent hover:text-accent-foreground"
+              onClick={() => handleComingSoon("Message info")}
+            >
+              <Info className="h-4 w-4" /> Message info
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent hover:text-accent-foreground"
+              onClick={handleReply}
+            >
+              <CornerUpLeft className="h-4 w-4" /> Reply
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent hover:text-accent-foreground"
+              onClick={handleCopy}
+            >
+              <Copy className="h-4 w-4" /> Copy
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent hover:text-accent-foreground"
+              onClick={() => handleComingSoon("Forwarding")}
+            >
+              <CornerUpRight className="h-4 w-4" /> Forward
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent hover:text-accent-foreground"
+              onClick={() => handleComingSoon("Pinning")}
+            >
+              <Pin className="h-4 w-4" /> Pin
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent hover:text-accent-foreground"
+              onClick={() => handleComingSoon("Starring")}
+            >
+              <Star className="h-4 w-4" /> Star
+            </button>
+            
+            <div className="my-1 h-px bg-border" />
+            
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent hover:text-accent-foreground"
+              onClick={() => handleComingSoon("Selecting messages")}
+            >
+              <CheckSquare className="h-4 w-4" /> Select
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent hover:text-accent-foreground"
+              onClick={() => handleComingSoon("Save as")}
+            >
+              <Download className="h-4 w-4" /> Save as
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent hover:text-accent-foreground"
+              onClick={() => handleComingSoon("Sharing")}
+            >
+              <Share2 className="h-4 w-4" /> Share
+            </button>
+            <button
+              type="button"
+              className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 hover:bg-accent hover:text-accent-foreground"
+              onClick={() => handleComingSoon("Open with")}
+            >
+              <ExternalLink className="h-4 w-4" /> Open with
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

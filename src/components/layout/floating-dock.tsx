@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
+import { useWorkspace } from "@/components/workspace-provider";
 import { useTotalUnread } from "@/hooks/use-total-unread";
 import { useTheme } from "@/hooks/use-theme";
 import {
@@ -17,7 +18,9 @@ import {
   LogOut,
   Moon,
   Sun,
-  User
+  User,
+  Building2,
+  Check
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -45,8 +48,11 @@ const navItems = [
 export function FloatingDock() {
   const pathname = usePathname();
   const { profile, signOut } = useAuth();
+  const { workspaces, activeWorkspaceId, setActiveWorkspaceId } = useWorkspace();
   const totalUnread = useTotalUnread();
   const { theme, setTheme } = useTheme();
+
+  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
 
   const initial =
     profile?.full_name?.charAt(0)?.toUpperCase() ??
@@ -117,6 +123,39 @@ export function FloatingDock() {
         >
           {theme === "dark" ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </motion.button>
+
+        <DropdownMenu>
+          <DropdownMenuTrigger className="focus:outline-none px-3 h-10 flex items-center gap-2 rounded-full hover:bg-white/10 dark:hover:bg-black/20 transition-colors text-sm font-medium">
+            <Building2 className="h-4 w-4 text-muted-foreground" />
+            <span className="hidden sm:block max-w-[120px] truncate">
+              {activeWorkspace?.name || "Workspace"}
+            </span>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-56 glass mt-4 border-border/50 shadow-2xl rounded-2xl">
+            <div className="p-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Workspaces
+            </div>
+            {workspaces.map((ws) => (
+              <DropdownMenuItem 
+                key={ws.id}
+                onClick={() => setActiveWorkspaceId(ws.id)}
+                className="rounded-xl cursor-pointer py-2 px-3 flex items-center justify-between"
+              >
+                <span className="truncate">{ws.name}</span>
+                {ws.id === activeWorkspaceId && <Check className="h-4 w-4 text-primary" />}
+              </DropdownMenuItem>
+            ))}
+            <DropdownMenuSeparator className="bg-border/50" />
+            <DropdownMenuItem className="rounded-xl cursor-pointer p-0">
+              <Link href="/settings/team" className="flex w-full items-center px-3 py-2 text-muted-foreground hover:text-foreground">
+                <Users className="mr-2 h-4 w-4" />
+                <span>Team Settings</span>
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <div className="w-px h-6 bg-border mx-1" />
 
         <DropdownMenu>
           <DropdownMenuTrigger className="focus:outline-none pl-1 pr-1.5 py-1 flex items-center rounded-full hover:bg-white/10 dark:hover:bg-black/20 transition-colors">
