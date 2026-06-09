@@ -20,7 +20,8 @@ import {
   Sun,
   User,
   Building2,
-  Check
+  Check,
+  ShieldAlert
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -181,11 +182,24 @@ export function FloatingDock() {
             </div>
             <DropdownMenuSeparator className="bg-border/50" />
             <DropdownMenuItem className="rounded-xl cursor-pointer p-0">
-              <Link href="/settings" className="flex w-full items-center px-2 py-1.5">
+              <Link href="/settings" className="flex w-full items-center px-2 py-1.5 text-muted-foreground hover:text-foreground">
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
               </Link>
             </DropdownMenuItem>
+            
+            {profile?.role === 'super_admin' && (
+              <>
+                <DropdownMenuSeparator className="bg-border/50" />
+                <DropdownMenuItem className="rounded-xl cursor-pointer p-0">
+                  <Link href="/admin" className="flex w-full items-center px-2 py-1.5 text-amber-500 hover:text-amber-400">
+                    <ShieldAlert className="mr-2 h-4 w-4" />
+                    <span>Super Admin</span>
+                  </Link>
+                </DropdownMenuItem>
+              </>
+            )}
+
             <DropdownMenuSeparator className="bg-border/50" />
             <DropdownMenuItem onClick={() => signOut()} className="rounded-xl cursor-pointer text-destructive focus:text-destructive">
               <LogOut className="mr-2 h-4 w-4" />
