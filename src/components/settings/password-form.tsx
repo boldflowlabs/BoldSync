@@ -20,7 +20,7 @@ import {
 const MIN_PASSWORD = 8;
 
 export function PasswordForm() {
-  const { profile } = useAuth();
+  const { user } = useAuth();
   const supabase = createClient();
 
   const [current, setCurrent] = useState('');
@@ -31,7 +31,7 @@ export function PasswordForm() {
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profile?.email) {
+    if (!user?.email) {
       toast.error('Cannot change password without a current email');
       return;
     }
@@ -52,7 +52,7 @@ export function PasswordForm() {
       // password. If it matches, the session refreshes silently; if it
       // doesn't, we abort before calling updateUser.
       const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: profile.email,
+        email: user.email,
         password: current,
       });
       if (signInError) {
