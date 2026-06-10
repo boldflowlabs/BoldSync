@@ -48,6 +48,7 @@ export default function SignupPage() {
       email,
       password,
       options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback?next=/dashboard`,
         data: {
           full_name: fullName,
         },
@@ -136,6 +137,7 @@ export default function SignupPage() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            autoComplete="email"
             className="h-9 rounded-md bg-transparent shadow-none"
           />
         </div>
@@ -149,6 +151,7 @@ export default function SignupPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            autoComplete="new-password"
             className="h-9 rounded-md bg-transparent shadow-none"
           />
         </div>
@@ -162,6 +165,7 @@ export default function SignupPage() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
+            autoComplete="new-password"
             className="h-9 rounded-md bg-transparent shadow-none"
           />
         </div>

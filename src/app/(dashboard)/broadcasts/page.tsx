@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/table';
 import { Radio, Plus, Loader2 } from 'lucide-react';
 import { getBroadcastStatus } from '@/lib/broadcast-status';
+import { PlanGate } from '@/components/billing/plan-gate';
 
 /**
  * Poll cadence while any broadcast is sending. Kept modest so we don't
@@ -145,8 +146,9 @@ export default function BroadcastsPage() {
   }
 
   return (
-    <div className="space-y-6">
-      {/* Top indeterminate progress bar: only visible while a broadcast
+    <PlanGate requiredPlan="growth" featureName="Broadcasts">
+      <div className="space-y-6">
+        {/* Top indeterminate progress bar: only visible while a broadcast
           is mid-send. Pure CSS animation so no extra deps. */}
       {anySending && (
         <div
@@ -276,6 +278,7 @@ export default function BroadcastsPage() {
           </Table>
         </div>
       )}
-    </div>
+      </div>
+    </PlanGate>
   );
 }
