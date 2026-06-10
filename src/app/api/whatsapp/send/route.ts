@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getSessionOrgId } from '@/lib/supabase/server'
 import { sendTextMessage, sendTemplateMessage } from '@/lib/whatsapp/meta-api'
 import { decrypt, encrypt, isLegacyFormat } from '@/lib/whatsapp/encryption'
 import { supabaseAdmin } from '@/lib/flows/admin-client'
@@ -33,7 +33,12 @@ export async function POST(request: Request) {
 
     // Per-user rate limit. Bucket key is scoped to this route so
     // `/broadcast` has an independent budget.
-    const limit = checkRateLimit(`send:${user.id}`, RATE_LIMITS.send)
+    const orgId = await getSessionOrgId()
+    if (!orgId) {
+      return NextResponse.json({ error: 'No active organization' }, { status: 400 })
+    }
+
+    const limit = checkRateLimit(`send:${orgId}`, RATE_LIMITS.send)
     if (!limit.success) {
       return rateLimitResponse(limit)
     }
@@ -75,7 +80,7 @@ export async function POST(request: Request) {
       .from('conversations')
       .select('*, contact:contacts(*)')
       .eq('id', conversation_id)
-      .eq('user_id', user.id)
+      .eq('org_id', orgId)
       .single()
 
     if (convError || !conversation) {
@@ -104,9 +109,9 @@ export async function POST(request: Request) {
 
     // Fetch and decrypt WhatsApp config
     const { data: config, error: configError } = await supabase
-      .from('whatsapp_config')
+      .from('waba_accounts')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('org_id', orgId)
       .single()
 
     if (configError || !config) {
@@ -116,22 +121,22 @@ export async function POST(request: Request) {
       )
     }
 
-    const accessToken = decrypt(config.access_token)
+    const accessToken = decrypt(config.access_token_enc)
 
     // Self-heal legacy CBC-encrypted tokens. Fire-and-forget: we
     // return from the send without waiting, so a failed upgrade just
     // means the next send tries again. The upgrade is idempotent —
     // concurrent sends both produce valid GCM ciphertexts of the same
     // plaintext, last write wins.
-    if (isLegacyFormat(config.access_token)) {
+    if (isLegacyFormat(config.access_token_enc)) {
       void supabase
-        .from('whatsapp_config')
-        .update({ access_token: encrypt(accessToken) })
+        .from('waba_accounts')
+        .update({ access_token_enc: encrypt(accessToken) })
         .eq('id', config.id)
         .then(({ error }) => {
           if (error) {
             console.warn(
-              '[whatsapp/send] access_token GCM upgrade failed:',
+              '[whatsapp/send] access_token_enc GCM upgrade failed:',
               error.message,
             )
           }
@@ -297,7 +302,7 @@ export async function POST(request: Request) {
           ended_at: new Date().toISOString(),
           end_reason: 'agent_replied',
         })
-        .eq('user_id', user.id)
+        .eq('org_id', orgId)
         .eq('contact_id', contact.id)
         .eq('status', 'active')
       if (pauseErr) {

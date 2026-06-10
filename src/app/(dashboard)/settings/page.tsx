@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Settings, MessageSquare, Tag, User, Palette } from 'lucide-react';
+import { Settings, MessageSquare, Tag, User, Palette, CreditCard } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { WhatsAppConfig } from '@/components/settings/whatsapp-config';
 import { TemplateManager } from '@/components/settings/template-manager';
@@ -10,9 +10,11 @@ import { ProfileForm } from '@/components/settings/profile-form';
 import { PasswordForm } from '@/components/settings/password-form';
 import { SessionsCard } from '@/components/settings/sessions-card';
 import { AppearancePanel } from '@/components/settings/appearance-panel';
+import { BillingPanel } from '@/components/settings/billing/billing-panel';
 
 const TAB_VALUES = [
   'profile',
+  'billing',
   'whatsapp',
   'templates',
   'tags',
@@ -61,6 +63,13 @@ export default function SettingsPage() {
             Profile
           </TabsTrigger>
           <TabsTrigger
+            value="billing"
+            className="data-active:bg-muted data-active:text-primary text-muted-foreground"
+          >
+            <CreditCard className="size-4" />
+            Billing
+          </TabsTrigger>
+          <TabsTrigger
             value="whatsapp"
             className="data-active:bg-muted data-active:text-primary text-muted-foreground"
           >
@@ -94,6 +103,10 @@ export default function SettingsPage() {
           <ProfileForm />
           <PasswordForm />
           <SessionsCard />
+        </TabsContent>
+
+        <TabsContent value="billing">
+          <BillingPanel />
         </TabsContent>
 
         <TabsContent value="whatsapp">

@@ -6,9 +6,9 @@ export default async function AdminOverviewPage() {
   const adminClient = createAdminClient();
 
   // Fetch counts bypassing RLS
-  const [{ count: usersCount }, { count: workspacesCount }, { count: contactsCount }] = await Promise.all([
+  const [{ count: usersCount }, { count: orgsCount }, { count: contactsCount }] = await Promise.all([
     adminClient.from('profiles').select('*', { count: 'exact', head: true }),
-    adminClient.from('workspaces').select('*', { count: 'exact', head: true }),
+    adminClient.from('orgs').select('*', { count: 'exact', head: true }),
     adminClient.from('contacts').select('*', { count: 'exact', head: true }),
   ]);
 
@@ -35,12 +35,12 @@ export default async function AdminOverviewPage() {
         <Card className="bg-card">
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Workspaces
+              Total Organizations
             </CardTitle>
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{workspacesCount ?? 0}</div>
+            <div className="text-2xl font-bold">{orgsCount ?? 0}</div>
           </CardContent>
         </Card>
 

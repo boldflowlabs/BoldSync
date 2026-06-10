@@ -11,6 +11,7 @@ import { ContactSidebar } from "@/components/inbox/contact-sidebar";
 import { toast } from "sonner";
 import { WifiOff } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useOrg } from "@/components/org-provider";
 
 export default function InboxPage() {
   const router = useRouter();
@@ -121,30 +122,26 @@ export default function InboxPage() {
     }
   }, []);
 
+  const { activeOrganizationId } = useOrg();
+
   // Check WhatsApp connection status on mount
   useEffect(() => {
     const checkConnection = async () => {
       const supabase = createClient();
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-      const user = session?.user;
+      
+      if (!activeOrganizationId) return;
 
-      if (!user) return;
-
-      // Table is `whatsapp_config` (singular) — the previous "whatsapp_configs"
-      // query always returned no rows, so the banner always showed "not connected".
       const { data } = await supabase
-        .from("whatsapp_config")
+        .from("waba_accounts")
         .select("status")
-        .eq("user_id", user.id)
+        .eq("org_id", activeOrganizationId)
         .maybeSingle();
 
       setWhatsappConnected(data?.status === "connected");
     };
 
     checkConnection();
-  }, []);
+  }, [activeOrganizationId]);
 
   // Handle realtime message events
   const handleMessageEvent = useCallback(

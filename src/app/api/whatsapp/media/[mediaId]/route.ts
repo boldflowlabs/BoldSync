@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getSessionOrgId } from '@/lib/supabase/server'
 import { getMediaUrl, downloadMedia } from '@/lib/whatsapp/meta-api'
 import { decrypt } from '@/lib/whatsapp/encryption'
 
@@ -31,11 +31,16 @@ export async function GET(
       )
     }
 
+    const orgId = await getSessionOrgId()
+    if (!orgId) {
+      return NextResponse.json({ error: 'No active organization' }, { status: 400 })
+    }
+
     // Fetch and decrypt WhatsApp config
     const { data: config, error: configError } = await supabase
-      .from('whatsapp_config')
+      .from('waba_accounts')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('org_id', orgId)
       .single()
 
     if (configError || !config) {
@@ -45,7 +50,7 @@ export async function GET(
       )
     }
 
-    const accessToken = decrypt(config.access_token)
+    const accessToken = decrypt(config.access_token_enc)
 
     // Get the download URL from Meta
     const mediaInfo = await getMediaUrl({ mediaId, accessToken })

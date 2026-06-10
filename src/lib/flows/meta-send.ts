@@ -30,7 +30,7 @@ import { supabaseAdmin } from './admin-client'
 // ------------------------------------------------------------
 
 interface SendTextEngineArgs {
-  userId: string
+  orgId: string
   conversationId: string
   contactId: string
   text: string
@@ -57,7 +57,7 @@ export async function engineSendText(
     .from('contacts')
     .select('id, phone')
     .eq('id', args.contactId)
-    .eq('user_id', args.userId)
+    .eq('org_id', args.orgId)
     .maybeSingle()
   if (contactErr || !contact?.phone) {
     throw new Error('contact not found for this user')
@@ -69,15 +69,15 @@ export async function engineSendText(
   }
 
   const { data: config, error: configErr } = await db
-    .from('whatsapp_config')
+    .from('waba_accounts')
     .select('*')
-    .eq('user_id', args.userId)
+    .eq('org_id', args.orgId)
     .single()
   if (configErr || !config) {
     throw new Error('WhatsApp not configured for this account')
   }
 
-  const accessToken = decrypt(config.access_token)
+  const accessToken = decrypt(config.access_token_enc)
 
   const attempt = async (phone: string): Promise<string> => {
     const r = await sendTextMessage({
@@ -136,7 +136,7 @@ export async function engineSendText(
 }
 
 interface SendInteractiveButtonsEngineArgs {
-  userId: string
+  orgId: string
   conversationId: string
   contactId: string
   bodyText: string
@@ -146,7 +146,7 @@ interface SendInteractiveButtonsEngineArgs {
 }
 
 interface SendInteractiveListEngineArgs {
-  userId: string
+  orgId: string
   conversationId: string
   contactId: string
   bodyText: string
@@ -192,7 +192,7 @@ async function sendInteractiveViaMeta(
 ): Promise<{ whatsapp_message_id: string }> {
   const db = supabaseAdmin()
 
-  // Scope the contact lookup by user_id — same defense-in-depth
+  // Scope the contact lookup by org_id — same defense-in-depth
   // rationale as automations/meta-send.ts. Service-role client
   // bypasses RLS, so an attacker who could call into the engine
   // with a contact_id from another tenant would otherwise send
@@ -201,7 +201,7 @@ async function sendInteractiveViaMeta(
     .from('contacts')
     .select('id, phone')
     .eq('id', input.contactId)
-    .eq('user_id', input.userId)
+    .eq('org_id', input.orgId)
     .maybeSingle()
   if (contactErr || !contact?.phone) {
     throw new Error('contact not found for this user')
@@ -213,15 +213,15 @@ async function sendInteractiveViaMeta(
   }
 
   const { data: config, error: configErr } = await db
-    .from('whatsapp_config')
+    .from('waba_accounts')
     .select('*')
-    .eq('user_id', input.userId)
+    .eq('org_id', input.orgId)
     .single()
   if (configErr || !config) {
     throw new Error('WhatsApp not configured for this account')
   }
 
-  const accessToken = decrypt(config.access_token)
+  const accessToken = decrypt(config.access_token_enc)
 
   const attempt = async (phone: string): Promise<string> => {
     if (input.kind === 'buttons') {

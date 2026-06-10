@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createClient } from '@/lib/supabase/server';
+import { createClient, getSessionOrgId } from '@/lib/supabase/server';
 import { sendReactionMessage } from '@/lib/whatsapp/meta-api';
 import { decrypt } from '@/lib/whatsapp/encryption';
 import { sanitizePhoneForMeta } from '@/lib/whatsapp/phone-utils';
@@ -31,7 +31,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const limit = checkRateLimit(`react:${user.id}`, RATE_LIMITS.react);
+    const orgId = await getSessionOrgId();
+    if (!orgId) {
+      return NextResponse.json({ error: 'No active organization' }, { status: 400 });
+    }
+
+    const limit = checkRateLimit(`react:${orgId}`, RATE_LIMITS.react);
     if (!limit.success) {
       return rateLimitResponse(limit);
     }
@@ -71,9 +76,9 @@ export async function POST(request: Request) {
 
     const { data: conversation, error: convError } = await supabase
       .from('conversations')
-      .select('id, user_id, contact:contacts(phone)')
+      .select('id, org_id, contact:contacts(phone)')
       .eq('id', targetMessage.conversation_id)
-      .eq('user_id', user.id)
+      .eq('org_id', orgId)
       .maybeSingle();
 
     if (convError || !conversation) {
@@ -95,9 +100,9 @@ export async function POST(request: Request) {
 
     // WhatsApp config + access token
     const { data: config, error: configError } = await supabase
-      .from('whatsapp_config')
-      .select('phone_number_id, access_token')
-      .eq('user_id', user.id)
+      .from('waba_accounts')
+      .select('phone_number_id, access_token_enc')
+      .eq('org_id', orgId)
       .single();
 
     if (configError || !config) {
@@ -107,7 +112,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const accessToken = decrypt(config.access_token);
+    const accessToken = decrypt(config.access_token_enc);
     const sanitizedPhone = sanitizePhoneForMeta(contact.phone);
 
     try {

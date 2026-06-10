@@ -1,13 +1,21 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useWorkspace } from "@/components/workspace-provider";
+import { useOrg } from "@/components/org-provider";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { Building2, UserPlus, Shield, User, Crown, Users } from "lucide-react";
+import { Building2, UserPlus, Shield, User, Crown, Users, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter
+} from "@/components/ui/dialog";
 
 interface Member {
   id: string;
@@ -21,24 +29,29 @@ interface Member {
 }
 
 export function TeamSettings() {
-  const { activeWorkspaceId } = useWorkspace();
+  const { activeOrganizationId } = useOrg();
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviting, setInviting] = useState(false);
+  const [removingId, setRemovingId] = useState<string | null>(null);
+  const [memberToRemove, setMemberToRemove] = useState<Member | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string | null>(null);
   const supabase = createClient();
 
   useEffect(() => {
-    if (!activeWorkspaceId) return;
+    if (!activeOrganizationId) return;
     loadMembers();
-  }, [activeWorkspaceId]);
+  }, [activeOrganizationId]);
 
   async function loadMembers() {
     setLoading(true);
+    const { data: { session } } = await supabase.auth.getSession();
+    
     const { data: membersData, error: membersErr } = await supabase
-      .from("workspace_members")
+      .from("org_members")
       .select(`id, role, user_id, created_at`)
-      .eq("workspace_id", activeWorkspaceId)
+      .eq("org_id", activeOrganizationId)
       .order("created_at", { ascending: true });
 
     if (membersErr || !membersData) {
@@ -64,6 +77,11 @@ export function TeamSettings() {
       profiles: profilesData.find(p => p.user_id === m.user_id) || null
     }));
 
+    if (session?.user) {
+      const current = merged.find(m => m.user_id === session.user.id);
+      if (current) setCurrentUserRole(current.role);
+    }
+
     setMembers(merged as any);
     setLoading(false);
   }
@@ -73,56 +91,58 @@ export function TeamSettings() {
     if (!inviteEmail) return;
 
     setInviting(true);
-    
-    // For MVP, since we don't have a backend invitation email system set up yet,
-    // we will lookup the user by email in profiles. If they exist, we add them to the workspace.
-    // If they don't, we show an error telling the user they must sign up first.
-    
-    const { data: profiles, error: profileErr } = await supabase
-      .from("profiles")
-      .select("user_id")
-      .eq("email", inviteEmail.trim())
-      .limit(1);
-
-    if (profileErr || !profiles || profiles.length === 0) {
-      toast.error(`No BoldSync account found for ${inviteEmail}. They must create an account first.`);
-      setInviting(false);
-      return;
-    }
-
-    const userIdToInvite = profiles[0].user_id;
-
-    // Check if already in workspace
-    const { data: existing, error: existErr } = await supabase
-      .from("workspace_members")
-      .select("id")
-      .eq("workspace_id", activeWorkspaceId)
-      .eq("user_id", userIdToInvite);
-
-    if (existing && existing.length > 0) {
-      toast.info("User is already in this workspace");
-      setInviting(false);
-      return;
-    }
-
-    const { error: insertErr } = await supabase
-      .from("workspace_members")
-      .insert({
-        workspace_id: activeWorkspaceId,
-        user_id: userIdToInvite,
-        role: 'member'
+    try {
+      const res = await fetch('/api/team/invite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inviteEmail.trim(), orgId: activeOrganizationId })
       });
 
-    if (insertErr) {
-      console.error(insertErr);
-      toast.error("Failed to add user to workspace");
-    } else {
-      toast.success("Teammate added successfully!");
-      setInviteEmail("");
-      loadMembers();
-    }
+      const data = await res.json();
 
-    setInviting(false);
+      if (!res.ok) {
+        if (res.status === 409) {
+          toast.info(data.error);
+        } else {
+          toast.error(data.error);
+        }
+      } else {
+        toast.success(data.message || "Teammate added successfully!");
+        setInviteEmail("");
+        loadMembers();
+      }
+    } catch (err) {
+      toast.error("An unexpected error occurred");
+    } finally {
+      setInviting(false);
+    }
+  };
+
+  const handleRemove = async (memberId: string) => {
+    if (!activeOrganizationId) return;
+
+    setRemovingId(memberId);
+    try {
+      const res = await fetch('/api/team/remove', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ memberId, orgId: activeOrganizationId })
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast.error(data.error);
+      } else {
+        toast.success("Teammate removed successfully!");
+        loadMembers();
+      }
+    } catch (err) {
+      toast.error("An unexpected error occurred");
+    } finally {
+      setRemovingId(null);
+      setMemberToRemove(null);
+    }
   };
 
   const getRoleIcon = (role: string) => {
@@ -151,11 +171,11 @@ export function TeamSettings() {
             placeholder="colleague@company.com" 
             value={inviteEmail}
             onChange={(e) => setInviteEmail(e.target.value)}
-            disabled={inviting || !activeWorkspaceId}
+            disabled={inviting || !activeOrganizationId}
             required
             className="bg-background/50"
           />
-          <Button type="submit" disabled={inviting || !activeWorkspaceId}>
+          <Button type="submit" disabled={inviting || !activeOrganizationId}>
             {inviting ? "Adding..." : "Add to Team"}
           </Button>
         </form>
@@ -165,7 +185,7 @@ export function TeamSettings() {
         <div className="border-b border-border/50 bg-muted/20 px-6 py-4">
           <h2 className="font-semibold flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
-            Workspace Members
+            Organization Members
           </h2>
         </div>
         
@@ -193,15 +213,49 @@ export function TeamSettings() {
                   </div>
                 </div>
                 
-                <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-full text-sm font-medium border border-border/50">
-                  {getRoleIcon(member.role)}
-                  <span className="capitalize">{member.role}</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2 bg-muted/50 px-3 py-1.5 rounded-full text-sm font-medium border border-border/50">
+                    {getRoleIcon(member.role)}
+                    <span className="capitalize">{member.role}</span>
+                  </div>
+                  {currentUserRole === 'owner' && member.role !== 'owner' && (
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                      onClick={() => setMemberToRemove(member)}
+                      disabled={removingId === member.id}
+                      title="Remove member"
+                    >
+                      {removingId === member.id ? (
+                        <div className="h-4 w-4 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                      ) : (
+                        <Trash2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
             ))
           )}
         </div>
       </div>
+      <Dialog open={!!memberToRemove} onOpenChange={(open) => !open && setMemberToRemove(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Remove Teammate</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to remove <span className="font-semibold text-foreground">{memberToRemove?.profiles?.full_name}</span> from the organization? They will lose access to all data and resources immediately.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setMemberToRemove(null)} disabled={removingId !== null}>Cancel</Button>
+            <Button variant="destructive" onClick={() => handleRemove(memberToRemove!.id)} disabled={removingId !== null}>
+              {removingId !== null ? "Removing..." : "Remove Access"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

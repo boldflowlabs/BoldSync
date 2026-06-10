@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getSessionOrgId } from '@/lib/supabase/server'
 import { decrypt } from '@/lib/whatsapp/encryption'
 
 /**
@@ -96,11 +96,16 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // whatsapp_config holds waba_id + encrypted access_token.
+    const orgId = await getSessionOrgId()
+    if (!orgId) {
+      return NextResponse.json({ error: 'No active organization' }, { status: 400 })
+    }
+
+    // waba_accounts holds phone_number_id + encrypted access_token.
     const { data: config, error: configError } = await supabase
-      .from('whatsapp_config')
+      .from('waba_accounts')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('org_id', orgId)
       .single()
 
     if (configError || !config) {
@@ -123,7 +128,7 @@ export async function POST() {
       )
     }
 
-    const accessToken = decrypt(config.access_token)
+    const accessToken = decrypt(config.access_token_enc)
 
     // Paginate through every template Meta has for this WABA. Meta
     // returns at most 100 per page; `paging.next` is a full URL. Cap
@@ -173,7 +178,7 @@ export async function POST() {
       const footer = (t.components ?? []).find((c) => c.type === 'FOOTER')
 
       const row = {
-        user_id: user.id,
+        org_id: orgId,
         name: t.name,
         category: normalizeCategory(t.category),
         language: t.language,
@@ -188,7 +193,7 @@ export async function POST() {
       const { data: existing, error: lookupErr } = await supabase
         .from('message_templates')
         .select('id')
-        .eq('user_id', user.id)
+        .eq('org_id', orgId)
         .eq('name', t.name)
         .eq('language', t.language)
         .maybeSingle()

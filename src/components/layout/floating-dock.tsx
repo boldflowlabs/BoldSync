@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
-import { useWorkspace } from "@/components/workspace-provider";
+import { useOrg } from "@/components/org-provider";
 import { useTotalUnread } from "@/hooks/use-total-unread";
 import { useTheme } from "@/hooks/use-theme";
 import {
@@ -49,11 +49,11 @@ const navItems = [
 export function FloatingDock() {
   const pathname = usePathname();
   const { profile, signOut } = useAuth();
-  const { workspaces, activeWorkspaceId, setActiveWorkspaceId } = useWorkspace();
+  const { orgs, activeOrganizationId, setActiveOrganizationId } = useOrg();
   const totalUnread = useTotalUnread();
   const { theme, setTheme } = useTheme();
 
-  const activeWorkspace = workspaces.find((w) => w.id === activeWorkspaceId);
+  const activeOrganization = orgs.find((w) => w.id === activeOrganizationId);
 
   const initial =
     profile?.full_name?.charAt(0)?.toUpperCase() ??
@@ -129,21 +129,21 @@ export function FloatingDock() {
           <DropdownMenuTrigger className="focus:outline-none px-3 h-10 flex items-center gap-2 rounded-full hover:bg-white/10 dark:hover:bg-black/20 transition-colors text-sm font-medium">
             <Building2 className="h-4 w-4 text-muted-foreground" />
             <span className="hidden sm:block max-w-[120px] truncate">
-              {activeWorkspace?.name || "Workspace"}
+              {activeOrganization?.name || "Organization"}
             </span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56 glass mt-4 border-border/50 shadow-2xl rounded-2xl">
             <div className="p-2 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Workspaces
+              Organizations
             </div>
-            {workspaces.map((ws) => (
+            {orgs.map((ws) => (
               <DropdownMenuItem 
                 key={ws.id}
-                onClick={() => setActiveWorkspaceId(ws.id)}
+                onClick={() => setActiveOrganizationId(ws.id)}
                 className="rounded-xl cursor-pointer py-2 px-3 flex items-center justify-between"
               >
                 <span className="truncate">{ws.name}</span>
-                {ws.id === activeWorkspaceId && <Check className="h-4 w-4 text-primary" />}
+                {ws.id === activeOrganizationId && <Check className="h-4 w-4 text-primary" />}
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator className="bg-border/50" />

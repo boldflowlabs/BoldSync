@@ -35,7 +35,7 @@ export interface AutomationContext {
 }
 
 export interface DispatchInput {
-  userId: string
+  orgId: string
   triggerType: AutomationTriggerType
   contactId?: string | null
   context?: AutomationContext
@@ -51,10 +51,11 @@ export interface DispatchInput {
 export async function runAutomationsForTrigger(input: DispatchInput): Promise<void> {
   try {
     const db = supabaseAdmin()
+    console.log(`[automations] fetching automations for orgId: ${input.orgId}, triggerType: ${input.triggerType}`);
     const { data: automations, error } = await db
       .from('automations')
       .select('*')
-      .eq('user_id', input.userId)
+      .eq('org_id', input.orgId)
       .eq('trigger_type', input.triggerType)
       .eq('is_active', true)
 
@@ -62,10 +63,15 @@ export async function runAutomationsForTrigger(input: DispatchInput): Promise<vo
       console.error('[automations] fetch failed:', error)
       return
     }
+    console.log(`[automations] found ${automations?.length || 0} active automations for ${input.triggerType}`);
     if (!automations || automations.length === 0) return
 
     for (const automation of automations as Automation[]) {
-      if (!triggerMatches(automation, input.context)) continue
+      if (!triggerMatches(automation, input.context)) {
+        console.log(`[automations] trigger condition did not match for automation ${automation.id}`);
+        continue
+      }
+      console.log(`[automations] executing automation ${automation.id}`);
       try {
         await executeAutomation(automation, input)
       } catch (err) {
@@ -84,7 +90,7 @@ export async function runAutomationsForTrigger(input: DispatchInput): Promise<vo
 export async function resumePendingExecution(pending: {
   id: string
   automation_id: string
-  user_id: string
+  org_id: string
   contact_id: string | null
   log_id: string | null
   parent_step_id: string | null
@@ -134,6 +140,7 @@ async function executeAutomation(automation: Automation, input: DispatchInput) {
     .from('automation_logs')
     .insert({
       automation_id: automation.id,
+      org_id: automation.org_id,
       user_id: automation.user_id,
       contact_id: input.contactId ?? null,
       trigger_event: input.triggerType,
@@ -222,6 +229,7 @@ async function executeStepsFrom(args: ExecuteArgs): Promise<void> {
       const ms = waitMs(cfg)
       await db.from('automation_pending_executions').insert({
         automation_id: args.automation.id,
+        org_id: args.automation.org_id,
         user_id: args.automation.user_id,
         contact_id: args.contactId,
         log_id: args.logId,
@@ -305,7 +313,7 @@ async function runStep(step: AutomationStep, args: ExecuteArgs): Promise<string>
       if (!text.trim()) throw new Error('send_message has empty text')
       const conversationId = await resolveConversationId(args)
       const { whatsapp_message_id } = await engineSendText({
-        userId: args.automation.user_id,
+        orgId: args.automation.org_id,
         conversationId,
         contactId: args.contactId,
         text,
@@ -337,7 +345,7 @@ async function runStep(step: AutomationStep, args: ExecuteArgs): Promise<string>
             .map((k) => String(cfg.variables![k]))
         : []
       const { whatsapp_message_id } = await engineSendTemplate({
-        userId: args.automation.user_id,
+        orgId: args.automation.org_id,
         conversationId,
         contactId: args.contactId,
         templateName: cfg.template_name,
@@ -377,16 +385,16 @@ async function runStep(step: AutomationStep, args: ExecuteArgs): Promise<string>
       if (cfg.mode === 'round_robin') {
         const { data: profiles } = await db
           .from('profiles')
-          .select('user_id')
-          .eq('user_id', args.automation.user_id)
+          .select('org_id')
+          .eq('org_id', args.automation.org_id)
           .limit(1)
-        agentId = profiles?.[0]?.user_id
+        agentId = profiles?.[0]?.org_id
       }
       if (!agentId) return 'no agent resolved'
       await db
         .from('conversations')
         .update({ assigned_agent_id: agentId })
-        .eq('user_id', args.automation.user_id)
+        .eq('org_id', args.automation.org_id)
         .eq('contact_id', args.contactId)
       return `assigned to ${agentId}`
     }
@@ -409,7 +417,7 @@ async function runStep(step: AutomationStep, args: ExecuteArgs): Promise<string>
       const cfg = step.step_config as CreateDealStepConfig
       if (!cfg.pipeline_id || !cfg.stage_id) throw new Error('create_deal needs pipeline + stage')
       await db.from('deals').insert({
-        user_id: args.automation.user_id,
+        org_id: args.automation.org_id,
         pipeline_id: cfg.pipeline_id,
         stage_id: cfg.stage_id,
         contact_id: args.contactId,
@@ -438,7 +446,7 @@ async function runStep(step: AutomationStep, args: ExecuteArgs): Promise<string>
       await db
         .from('conversations')
         .update({ status: 'closed', updated_at: new Date().toISOString() })
-        .eq('user_id', args.automation.user_id)
+        .eq('org_id', args.automation.org_id)
         .eq('contact_id', args.contactId)
       return 'conversation closed'
     }
@@ -466,7 +474,7 @@ async function resolveConversationId(args: ExecuteArgs): Promise<string> {
   const { data, error } = await supabaseAdmin()
     .from('conversations')
     .select('id')
-    .eq('user_id', args.automation.user_id)
+    .eq('org_id', args.automation.org_id)
     .eq('contact_id', args.contactId)
     .maybeSingle()
   if (error) throw new Error(`conversation lookup failed: ${error.message}`)

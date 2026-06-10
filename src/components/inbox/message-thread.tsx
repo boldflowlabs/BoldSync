@@ -176,7 +176,7 @@ export function MessageThread({
 
   // Profiles are bounded by RLS to rows the current user is allowed to
   // see — today that's just the current user, but the dropdown keeps the
-  // shape ready for shared-team workspaces without a refactor.
+  // shape ready for shared-team orgs without a refactor.
   useEffect(() => {
     let cancelled = false;
     const supabase = createClient();

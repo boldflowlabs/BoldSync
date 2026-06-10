@@ -37,9 +37,10 @@ const contactFields = [
 ];
 
 const SAMPLE_CONTACT: Contact = {
-  id: 'sample',
-  user_id: '',
-  name: 'John Doe',
+  id: 'mock-1',
+  org_id: 'mock-org-1',
+  user_id: 'mock-user-1',
+  name: 'Jane Smith',
   phone: '+1234567890',
   email: 'john@example.com',
   company: 'Acme Corp',

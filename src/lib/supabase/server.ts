@@ -26,3 +26,9 @@ export async function createClient() {
     }
   )
 }
+
+export async function getSessionOrgId() {
+  const cookieStore = await cookies()
+  const orgId = cookieStore.get('boldsync_org_id')?.value
+  return orgId || null
+}

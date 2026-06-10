@@ -123,7 +123,7 @@ export default function DashboardPage() {
           {greeting}{profile?.full_name ? `, ${profile.full_name.split(' ')[0]}` : ''}.
         </h1>
         <p className="text-muted-foreground text-sm">
-          Here is an overview of your workspace today.
+          Here is an overview of your org today.
         </p>
       </div>
 

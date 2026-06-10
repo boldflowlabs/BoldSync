@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getSessionOrgId } from '@/lib/supabase/server'
 import { runAutomationsForTrigger } from '@/lib/automations/engine'
 import type { AutomationTriggerType } from '@/types'
 
@@ -15,13 +15,16 @@ export async function POST(request: Request) {
   } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
+  const orgId = await getSessionOrgId()
+  if (!orgId) return NextResponse.json({ error: 'No active organization' }, { status: 400 })
+
   const body = await request.json().catch(() => null)
   if (!body?.trigger_type) {
     return NextResponse.json({ error: 'trigger_type required' }, { status: 400 })
   }
 
   await runAutomationsForTrigger({
-    userId: user.id,
+    orgId,
     triggerType: body.trigger_type as AutomationTriggerType,
     contactId: body.contact_id ?? null,
     context: body.context ?? {},

@@ -45,9 +45,9 @@ export default async function AdminLayout({
               <Users className="h-4 w-4" />
               All Users
             </Link>
-            <Link href="/admin/workspaces" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">
+            <Link href="/admin/orgs" className="flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground hover:bg-muted hover:text-foreground">
               <Building2 className="h-4 w-4" />
-              Workspaces
+              Organizations
             </Link>
           </nav>
         </aside>

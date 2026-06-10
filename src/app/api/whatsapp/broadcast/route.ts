@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, getSessionOrgId } from '@/lib/supabase/server'
 import { sendTemplateMessage } from '@/lib/whatsapp/meta-api'
 import { decrypt } from '@/lib/whatsapp/encryption'
 import {
@@ -64,7 +64,12 @@ export async function POST(request: Request) {
     // Per-user broadcast budget. Note: this limits how often a user
     // can *start* a campaign, not how many messages go out inside
     // one — the fan-out loop below runs without additional gating.
-    const limit = checkRateLimit(`broadcast:${user.id}`, RATE_LIMITS.broadcast)
+    const orgId = await getSessionOrgId()
+    if (!orgId) {
+      return NextResponse.json({ error: 'No active organization' }, { status: 400 })
+    }
+
+    const limit = checkRateLimit(`broadcast:${orgId}`, RATE_LIMITS.broadcast)
     if (!limit.success) {
       return rateLimitResponse(limit)
     }
@@ -108,9 +113,9 @@ export async function POST(request: Request) {
     }
 
     const { data: config, error: configError } = await supabase
-      .from('whatsapp_config')
+      .from('waba_accounts')
       .select('*')
-      .eq('user_id', user.id)
+      .eq('org_id', orgId)
       .single()
 
     if (configError || !config) {
@@ -123,7 +128,7 @@ export async function POST(request: Request) {
       )
     }
 
-    const accessToken = decrypt(config.access_token)
+    const accessToken = decrypt(config.access_token_enc)
 
     const results: BroadcastResult[] = []
     let sentCount = 0

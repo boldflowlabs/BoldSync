@@ -20,14 +20,14 @@ import { supabaseAdmin } from './admin-client'
 // ------------------------------------------------------------
 
 interface SendTextArgs {
-  userId: string
+  orgId: string
   conversationId: string
   contactId: string
   text: string
 }
 
 interface SendTemplateArgs {
-  userId: string
+  orgId: string
   conversationId: string
   contactId: string
   templateName: string
@@ -52,7 +52,7 @@ type SendInput =
 async function sendViaMeta(input: SendInput): Promise<{ whatsapp_message_id: string }> {
   const db = supabaseAdmin()
 
-  // Scope the contact lookup by user_id. The engine uses the
+  // Scope the contact lookup by org_id. The engine uses the
   // service-role client (bypassing RLS), and the public
   // /api/automations/engine endpoint accepts contact_id from the
   // request body — without this filter, an authenticated user could
@@ -64,7 +64,7 @@ async function sendViaMeta(input: SendInput): Promise<{ whatsapp_message_id: str
     .from('contacts')
     .select('id, phone')
     .eq('id', input.contactId)
-    .eq('user_id', input.userId)
+    .eq('org_id', input.orgId)
     .maybeSingle()
   if (contactErr || !contact?.phone) {
     throw new Error('contact not found for this user')
@@ -76,15 +76,15 @@ async function sendViaMeta(input: SendInput): Promise<{ whatsapp_message_id: str
   }
 
   const { data: config, error: configErr } = await db
-    .from('whatsapp_config')
+    .from('waba_accounts')
     .select('*')
-    .eq('user_id', input.userId)
+    .eq('org_id', input.orgId)
     .single()
   if (configErr || !config) {
     throw new Error('WhatsApp not configured for this account')
   }
 
-  const accessToken = decrypt(config.access_token)
+  const accessToken = decrypt(config.access_token_enc)
 
   const attempt = async (phone: string): Promise<string> => {
     if (input.kind === 'template') {
