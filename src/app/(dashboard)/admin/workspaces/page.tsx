@@ -13,11 +13,8 @@ export default async function AdminOrganizationsPage() {
   const adminClient = createAdminClient();
 
   const { data: orgs } = await adminClient
-    .from('orgs')
-    .select(`
-      *,
-      owner:profiles!orgs_owner_id_fkey(full_name, email)
-    `)
+    .from('organizations')
+    .select('*')
     .order('created_at', { ascending: false });
 
   return (
@@ -32,8 +29,9 @@ export default async function AdminOrganizationsPage() {
           <TableHeader>
             <TableRow>
               <TableHead>Organization Name</TableHead>
-              <TableHead>Owner</TableHead>
+              <TableHead>Plan & Status</TableHead>
               <TableHead>Created</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -41,20 +39,24 @@ export default async function AdminOrganizationsPage() {
               <TableRow key={org.id}>
                 <TableCell className="font-medium">{org.name}</TableCell>
                 <TableCell>
-                  <div className="flex flex-col">
-                    <span className="text-sm font-medium">{org.owner?.full_name || 'Unknown'}</span>
-                    <span className="text-xs text-muted-foreground">{org.owner?.email || ''}</span>
-                  </div>
+                  <span className="text-sm font-medium">{org.plan || 'none'}</span>
+                  <br/>
+                  <span className="text-xs text-muted-foreground capitalize">{org.status || 'active'}</span>
                 </TableCell>
                 <TableCell className="text-muted-foreground text-sm">
                   {org.created_at ? format(new Date(org.created_at), 'MMM d, yyyy') : 'Unknown'}
+                </TableCell>
+                <TableCell className="text-right">
+                  <a href={`/admin/workspaces/${org.id}/billing`} className="text-sm font-medium text-primary hover:underline">
+                    Manage Billing
+                  </a>
                 </TableCell>
               </TableRow>
             ))}
             
             {(!orgs || orgs.length === 0) && (
               <TableRow>
-                <TableCell colSpan={3} className="h-24 text-center text-muted-foreground">
+                <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
                   No orgs found.
                 </TableCell>
               </TableRow>

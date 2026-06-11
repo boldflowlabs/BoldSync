@@ -4,7 +4,7 @@ import { createContext, useContext, useEffect, useState, ReactNode, useCallback 
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Organization } from "@/types";
-import { PaywallModal } from "./billing/paywall-modal";
+import { SuspendedModal } from "./billing/suspended-modal";
 
 export type OrgWithRole = Organization & { currentUserRole?: string; onboarding_completed?: boolean };
 
@@ -95,13 +95,12 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   const isSuperAdmin = userEmail === 'godsonsaji0@gmail.com';
   const showPaywall = !isSuperAdmin &&
                       activeOrg?.onboarding_completed !== false && 
-                      activeOrg?.currentUserRole === 'owner' && 
-                      activeOrg?.plan === 'none' &&
+                      (activeOrg?.status === 'suspended' || activeOrg?.status === 'inactive') &&
                       pathname !== '/onboarding';
 
   return (
     <OrgContext.Provider value={{ orgs, activeOrganizationId, setActiveOrganizationId, isLoading, refreshOrgs: loadOrganizations }}>
-      {showPaywall ? <PaywallModal /> : children}
+      {showPaywall ? <SuspendedModal /> : children}
     </OrgContext.Provider>
   );
 }

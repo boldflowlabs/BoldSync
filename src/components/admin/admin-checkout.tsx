@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from 'react';
-import { useOrg } from '@/components/org-provider';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Check, Loader2, X, Lock } from 'lucide-react';
 import { toast } from 'sonner';
 import Script from 'next/script';
-import { Building2 } from 'lucide-react';
 
 const PLANS = [
   { 
@@ -37,11 +35,8 @@ const PLANS = [
   }
 ];
 
-export function PaywallModal() {
-  const { orgs, activeOrganizationId } = useOrg();
+export function AdminCheckout({ orgId }: { orgId: string }) {
   const [loading, setLoading] = useState<string | null>(null);
-
-  const activeWorkspace = orgs.find(w => w.id === activeOrganizationId);
 
   const handlePurchase = async (planId: string) => {
     try {
@@ -49,7 +44,7 @@ export function PaywallModal() {
       const res = await fetch('/api/razorpay/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ planId, workspaceId: activeOrganizationId })
+        body: JSON.stringify({ planId, workspaceId: orgId })
       });
 
       const data = await res.json();
@@ -73,7 +68,7 @@ export function PaywallModal() {
                 razorpay_subscription_id: response.razorpay_subscription_id,
                 razorpay_signature: response.razorpay_signature,
                 planId: planId,
-                workspaceId: activeOrganizationId
+                workspaceId: orgId
               })
             });
 
@@ -81,11 +76,10 @@ export function PaywallModal() {
               throw new Error('Verification failed. If you were charged, please contact support.');
             }
 
-            toast.success("Payment successful! Unlocking your dashboard...", { id: 'verify' });
-            
+            toast.success("Payment successful! The org plan is upgraded.", { id: 'verify' });
             setTimeout(() => {
-              window.location.href = '/dashboard';
-            }, 1000);
+              window.location.reload();
+            }, 1500);
           } catch (err: any) {
             toast.error(err.message, { id: 'verify' });
           }
@@ -111,18 +105,13 @@ export function PaywallModal() {
   return (
     <>
       <Script src="https://checkout.razorpay.com/v1/checkout.js" />
-      <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
-        <div className="relative w-full max-w-5xl my-auto animate-in fade-in zoom-in-95 duration-300">
-          
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center justify-center p-3 bg-primary/10 rounded-full mb-4 ring-1 ring-primary/20">
-              <Lock className="w-6 h-6 text-primary" />
-            </div>
-            <h1 className="text-3xl font-bold tracking-tight mb-2">Choose Your Plan</h1>
-            <p className="text-muted-foreground max-w-lg mx-auto">
-              You've completed onboarding! To unlock the BoldSync dashboard and invite your team, please select a billing plan.
-            </p>
-          </div>
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-xl font-bold tracking-tight">Generate Checkout Link</h2>
+          <p className="text-sm text-muted-foreground">
+            Clicking a button below will open Razorpay. You can complete the checkout on behalf of the client using your agency card, or you can copy the checkout link to send to them (coming soon).
+          </p>
+        </div>
 
           <div className="grid gap-6 md:grid-cols-3">
             {PLANS.map((plan) => {
