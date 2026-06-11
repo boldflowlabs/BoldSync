@@ -47,8 +47,8 @@ export default async function AdminOrganizationsPage() {
                   {org.created_at ? format(new Date(org.created_at), 'MMM d, yyyy') : 'Unknown'}
                 </TableCell>
                 <TableCell className="text-right">
-                  <a href={`/admin/workspaces/${org.id}/billing`} className="text-sm font-medium text-primary hover:underline">
-                    Manage Billing
+                  <a href={`/admin/clients/${org.id}`} className="text-sm font-medium text-primary hover:underline">
+                    Manage Org
                   </a>
                 </TableCell>
               </TableRow>

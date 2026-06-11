@@ -162,9 +162,7 @@ export function AdminCheckout({ orgId }: { orgId: string }) {
               );
             })}
           </div>
-          
         </div>
-      </div>
     </>
   );
 }

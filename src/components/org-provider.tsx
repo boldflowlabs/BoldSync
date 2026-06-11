@@ -95,7 +95,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   const isSuperAdmin = userEmail === 'godsonsaji0@gmail.com';
   const showPaywall = !isSuperAdmin &&
                       activeOrg?.onboarding_completed !== false && 
-                      (activeOrg?.status === 'suspended' || activeOrg?.status === 'inactive') &&
+                      ((activeOrg as any)?.status === 'suspended' || (activeOrg as any)?.status === 'inactive') &&
                       pathname !== '/onboarding';
 
   return (

@@ -19,7 +19,7 @@ export function PlanGate({ requiredPlan, children, featureName = "This feature" 
   // If no org yet, just return null (loading state handled globally)
   if (!activeOrg) return null;
 
-  const hasAccess = hasAccessToFeature(activeOrg.plan, requiredPlan);
+  const hasAccess = hasAccessToFeature((activeOrg as any).plan, requiredPlan);
 
   // Super admin bypass or has access
   if (hasAccess || activeOrg.currentUserRole === 'superadmin') {

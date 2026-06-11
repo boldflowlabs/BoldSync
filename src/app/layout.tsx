@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import Script from "next/script";
 import { Toaster } from "sonner";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import "./globals.css";
 import { ThemeProvider } from "@/hooks/use-theme";
 import { DEFAULT_THEME, STORAGE_KEY, THEME_IDS } from "@/lib/themes";
@@ -77,17 +78,13 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <Script
-          id="theme-boot"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }}
-        />
       </head>
       <body className="min-h-full bg-background text-foreground font-sans" suppressHydrationWarning>
         <ThemeProvider>
-          {children}
-          <Toaster
-            position="bottom-right"
+          <TooltipProvider>
+            {children}
+            <Toaster
+              position="bottom-right"
             toastOptions={{
               style: {
                 background: "var(--background)",
@@ -98,6 +95,7 @@ export default function RootLayout({
               },
             }}
           />
+          </TooltipProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -14,20 +14,35 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Verify user is owner of organization
     const adminClient = createAdminClient();
-    const { data: membership, error } = await adminClient
-      .from('org_members')
-      .select('role')
-      .eq('org_id', workspaceId)
-      .eq('user_id', session.user.id)
+    
+    // Check if user is super admin
+    const { data: profile } = await adminClient
+      .from('profiles')
+      .select('is_super_admin')
+      .eq('id', session.user.id)
       .single();
 
-    if (error) {
-      console.error("Error fetching membership:", error);
+    const isSuperAdmin = profile?.is_super_admin === true;
+
+    // Verify user is owner of organization or super admin
+    let isOwner = false;
+    
+    if (!isSuperAdmin) {
+      const { data: membership, error } = await adminClient
+        .from('org_members')
+        .select('role')
+        .eq('org_id', workspaceId)
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (error && error.code !== 'PGRST116') {
+        console.error("Error fetching membership:", error);
+      }
+      isOwner = membership?.role === 'owner';
     }
 
-    if (!membership || membership.role !== 'owner') {
+    if (!isOwner && !isSuperAdmin) {
       return NextResponse.json({ error: 'Only workspace owners can manage billing' }, { status: 403 });
     }
 

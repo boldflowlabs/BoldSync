@@ -100,7 +100,7 @@ export default function OnboardingPage() {
                 <Briefcase className="h-4 w-4 text-muted-foreground" />
                 Industry
               </Label>
-              <Select value={industry} onValueChange={setIndustry} required>
+              <Select value={industry} onValueChange={(v) => setIndustry(v || "")} required>
                 <SelectTrigger className="h-11 bg-background/50">
                   <SelectValue placeholder="Select your industry" />
                 </SelectTrigger>
@@ -121,7 +121,7 @@ export default function OnboardingPage() {
                 <Users className="h-4 w-4 text-muted-foreground" />
                 Company Size
               </Label>
-              <Select value={companySize} onValueChange={setCompanySize} required>
+              <Select value={companySize} onValueChange={(v) => setCompanySize(v || "")} required>
                 <SelectTrigger className="h-11 bg-background/50">
                   <SelectValue placeholder="Select company size" />
                 </SelectTrigger>
