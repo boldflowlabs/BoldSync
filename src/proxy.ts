@@ -25,10 +25,17 @@ export async function proxy(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
 
+  // Disable public signup - redirect to login with message
+  if (request.nextUrl.pathname === '/signup' || request.nextUrl.pathname === '/register') {
+    const url = request.nextUrl.clone()
+    url.pathname = '/login'
+    url.searchParams.set('message', 'contact-agency')
+    return NextResponse.redirect(url)
+  }
+
   // Auth pages - redirect to dashboard if already logged in
   if (user && (
     request.nextUrl.pathname === '/login' ||
-    request.nextUrl.pathname === '/signup' ||
     request.nextUrl.pathname === '/forgot-password'
   )) {
     const url = request.nextUrl.clone()

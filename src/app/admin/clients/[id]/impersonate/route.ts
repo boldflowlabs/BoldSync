@@ -58,10 +58,20 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     // Redirect the admin to the action link which will log them in as the client
     // Note: They will lose their admin session until they log out and log back in as admin.
-    return NextResponse.redirect(linkData.properties.action_link);
+    const response = NextResponse.redirect(new URL(linkData.properties.action_link));
+    
+    // Set a cookie so the client dashboard knows to show the impersonation banner
+    response.cookies.set('boldsync_is_impersonating', org.name, {
+      path: '/',
+      httpOnly: false, // Accessible to client components for the banner
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24, // 1 day
+    });
 
+    return response;
   } catch (error: any) {
-    console.error('Impersonation Error:', error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error('Impersonation error:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
   }
 }

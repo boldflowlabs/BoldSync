@@ -1,21 +1,29 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Zap } from "lucide-react";
 import { toast } from "sonner";
+
+function ContactAgencyBanner() {
+  const searchParams = useSearchParams();
+  if (searchParams.get('message') === 'contact-agency') {
+    return (
+      <div className="mb-6 rounded-lg border border-amber-500/20 bg-amber-500/10 p-4 text-sm text-center text-amber-600 dark:text-amber-400">
+        BoldSync accounts are set up by BoldFlow Labs.
+        <a href="https://boldflowlabs.com" target="_blank" rel="noopener noreferrer" className="font-semibold underline ml-1 hover:text-amber-700 dark:hover:text-amber-300">
+          Contact us to get started &rarr;
+        </a>
+      </div>
+    );
+  }
+  return null;
+}
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -57,6 +65,10 @@ export default function LoginPage() {
           Sign in to your BoldSync account
         </p>
       </div>
+
+      <Suspense fallback={null}>
+        <ContactAgencyBanner />
+      </Suspense>
 
       <form onSubmit={handleLogin} className="flex flex-col gap-4">
         {error && (
@@ -107,16 +119,6 @@ export default function LoginPage() {
           {loading ? "Signing in..." : "Sign in"}
         </Button>
       </form>
-
-      <p className="mt-8 text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{" "}
-        <Link
-          href="/signup"
-          className="font-medium text-foreground underline underline-offset-4 hover:text-foreground transition-colors"
-        >
-          Sign up
-        </Link>
-      </p>
     </div>
   );
 }

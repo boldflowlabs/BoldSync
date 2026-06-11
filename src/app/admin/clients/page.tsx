@@ -8,14 +8,37 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { format } from 'date-fns';
+import { ClientFilters } from './client-filters';
 
-export default async function AdminOrganizationsPage() {
+export default async function AdminOrganizationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
   const adminClient = createAdminClient();
+  const params = await searchParams;
 
-  const { data: orgs } = await adminClient
-    .from('organizations')
-    .select('*')
-    .order('created_at', { ascending: false });
+  const planFilter = typeof params.plan === 'string' ? params.plan : null;
+  const statusFilter = typeof params.status === 'string' ? params.status : null;
+  const sort = typeof params.sort === 'string' ? params.sort : 'created_at:desc';
+
+  let query = adminClient.from('organizations').select('*');
+
+  if (planFilter && planFilter !== 'all') {
+    query = query.eq('plan', planFilter);
+  }
+  if (statusFilter && statusFilter !== 'all') {
+    query = query.eq('status', statusFilter);
+  }
+
+  const [sortField, sortOrder] = sort.split(':');
+  if (sortField && sortOrder) {
+    query = query.order(sortField, { ascending: sortOrder === 'asc' });
+  } else {
+    query = query.order('created_at', { ascending: false });
+  }
+
+  const { data: orgs } = await query;
 
   return (
     <div className="space-y-6">
@@ -23,6 +46,8 @@ export default async function AdminOrganizationsPage() {
         <h1 className="text-3xl font-bold tracking-tight text-foreground">All Organizations</h1>
         <p className="text-muted-foreground">Every org registered on the platform.</p>
       </div>
+
+      <ClientFilters />
 
       <div className="rounded-xl border border-border bg-card">
         <Table>

@@ -35,7 +35,7 @@ export function OrgProvider({ children }: { children: ReactNode }) {
 
     const { data, error } = await supabase
       .from('org_members')
-      .select('role, organizations(*)')
+      .select('role, organizations(*, waba_accounts(status))')
       .eq('user_id', session.user.id);
 
     if (error) {
@@ -78,13 +78,16 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (isLoading || !activeOrg) return;
 
-    // 1. Onboarding Check
-    if (activeOrg.onboarding_completed === false) {
+    // 1. Onboarding Check (Only show if WABA is pending)
+    const wabaAccounts = (activeOrg as any).waba_accounts || [];
+    const isWabaPending = wabaAccounts.length > 0 && wabaAccounts[0].status === 'pending';
+    
+    if (isWabaPending) {
       if (pathname !== '/onboarding') {
         router.push('/onboarding');
       }
     } else {
-      // 2. If onboarding is complete, ensure they are NOT on the onboarding page
+      // 2. If WABA is not pending, ensure they are NOT on the onboarding page
       if (pathname === '/onboarding') {
         router.push('/dashboard');
       }
@@ -94,7 +97,6 @@ export function OrgProvider({ children }: { children: ReactNode }) {
   // Render Logic
   const isSuperAdmin = userEmail === 'godsonsaji0@gmail.com';
   const showPaywall = !isSuperAdmin &&
-                      activeOrg?.onboarding_completed !== false && 
                       ((activeOrg as any)?.status === 'suspended' || (activeOrg as any)?.status === 'inactive') &&
                       pathname !== '/onboarding';
 

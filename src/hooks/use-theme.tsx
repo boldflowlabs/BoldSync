@@ -40,11 +40,6 @@ const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 function readInitialTheme(): ThemeId {
   if (typeof window === "undefined") return DEFAULT_THEME;
-  // Whatever the boot script applied is the truth. Fall back to
-  // localStorage / default if for some reason the attribute is missing
-  // (e.g. someone bypassed the boot script in a custom layout).
-  const fromAttr = document.documentElement.dataset.theme;
-  if (isThemeId(fromAttr)) return fromAttr;
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
     if (isThemeId(stored)) return stored;
@@ -69,6 +64,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
       // still updates so the current tab works for the session.
     }
   }, []);
+
+  // Sync the DOM on mount to fix hydration mismatch when default theme differs from local storage
+  useEffect(() => {
+    if (typeof document !== "undefined") {
+      document.documentElement.dataset.theme = theme;
+    }
+  }, [theme]);
 
   // Sync from other tabs — if you change your theme in tab A, tab B
   // catches up without a refresh.

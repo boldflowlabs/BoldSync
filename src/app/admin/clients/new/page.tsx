@@ -7,6 +7,7 @@ import { createClientOrg } from '../actions';
 import { redirect } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { SubmitButton } from './submit-button';
 
 export default function NewOrganizationPage() {
   async function action(formData: FormData) {
@@ -104,7 +105,7 @@ export default function NewOrganizationPage() {
               <Button type="button" variant="outline" render={<Link href="/admin/clients" />}>
                 Cancel
               </Button>
-              <Button type="submit">Create Organization</Button>
+              <SubmitButton />
             </div>
           </form>
         </CardContent>

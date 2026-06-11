@@ -12,7 +12,8 @@ const tabs = [
   { name: 'Team', href: '/team' },
   { name: 'Automations', href: '/automations' },
   { name: 'n8n Services', href: '/n8n' },
-  { name: 'Activity Log', href: '/logs' },
+  { name: 'Flows', href: '/flows' },
+  { name: 'Activity', href: '/activity' },
 ];
 
 export function ClientTabs({ orgId }: { orgId: string }) {

@@ -24,7 +24,6 @@ export async function createClientOrg(formData: FormData) {
     if (existingUser) {
       userId = existingUser.id;
     } else {
-      // Create new user with a random password, they can reset it later
       const randomPassword = Math.random().toString(36).slice(-10) + 'A1!';
       const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
         email: ownerEmail,
@@ -35,14 +34,13 @@ export async function createClientOrg(formData: FormData) {
       if (createError || !newUser.user) throw new Error(createError?.message || 'Failed to create user');
       userId = newUser.user.id;
       
-      // Send password reset email so they can set their own password
       await adminClient.auth.admin.generateLink({
         type: 'recovery',
         email: ownerEmail,
       });
     }
 
-    // 2. Ensure profile exists (trigger usually does this, but we update full_name just in case)
+    // 2. Ensure profile exists
     await adminClient.from('profiles').upsert({
       id: userId,
       full_name: ownerName,
@@ -60,7 +58,7 @@ export async function createClientOrg(formData: FormData) {
         plan: plan,
         status: status,
         trial_ends_at: trialEndsAt,
-        onboarding_completed: true // Skip onboarding for agency-created clients
+        onboarding_completed: true
       })
       .select()
       .single();
@@ -78,12 +76,56 @@ export async function createClientOrg(formData: FormData) {
 
     if (memberError) throw new Error(memberError.message);
 
+    // 5. Create WABA entry
+    await adminClient.from('waba_accounts').insert({
+      org_id: org.id,
+      status: 'disconnected'
+    });
+
+    // 6. Create n8n service entry
+    await adminClient.from('n8n_services').insert({
+      org_id: org.id,
+      service_name: `${businessName} Automation Service`,
+      api_key: Math.random().toString(36).substring(2, 15) // Generate a temporary dummy key
+    });
+
+    // 7. Send welcome email/webhook
+    if (process.env.N8N_WELCOME_WEBHOOK_URL) {
+      try {
+        await fetch(process.env.N8N_WELCOME_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'client_created',
+            org_id: org.id,
+            businessName,
+            ownerEmail,
+            ownerName,
+            plan
+          })
+        });
+      } catch (err) {
+        console.error('Failed to send N8N welcome webhook', err);
+      }
+    }
+
+    // 8. Log activity
+    const { data: authData } = await adminClient.auth.getUser();
+    const actorId = authData.user?.id || null;
+
+    await adminClient.from('admin_activity_logs').insert({
+      org_id: org.id,
+      actor_id: actorId, // if the server action is authenticated, it will log the admin
+      event_type: 'organization_created',
+      metadata: { plan, status, source: 'admin_panel' }
+    });
+
+    // 9. Return the org ID to redirect
     revalidatePath('/admin/clients');
     return org.id;
 
   } catch (error: any) {
     console.error('Create Org Error:', error);
-    // In a real app we'd return { error: message }, but we'll throw for now
     throw error;
   }
 }
