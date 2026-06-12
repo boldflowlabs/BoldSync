@@ -29,6 +29,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { data: org } = await adminClient
       .from('organizations')
       .select(`
+        name,
         owner:org_members(user:profiles(email))
       `)
       .eq('id', id)

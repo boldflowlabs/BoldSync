@@ -63,7 +63,7 @@ export async function POST(request: Request) {
           next_billing_at: subscription.charge_at ? new Date(subscription.charge_at * 1000).toISOString() : null
         }, { onConflict: 'razorpay_sub_id' });
         
-      } else if (event === 'subscription.cancelled' || event === 'subscription.halted') {
+      } else if (event === 'subscription.cancelled' || event === 'subscription.halted' || event === 'payment.failed') {
         const newStatus = event === 'subscription.cancelled' ? 'canceled' : 'past_due';
         await adminClient.from('organizations').update({
           status: newStatus

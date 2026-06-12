@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { AuthProvider, useAuth } from "@/hooks/use-auth";
 import { OrgProvider, useOrg } from "@/components/org-provider";
 import { FloatingDock } from "@/components/layout/floating-dock";
@@ -12,7 +12,9 @@ import { FloatingDock } from "@/components/layout/floating-dock";
 
 function DashboardShellInner({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const { orgs, activeOrganizationId } = useOrg();
   const router = useRouter();
+  const pathname = usePathname();
 
   // No more sidebar drawer state.
 
@@ -38,6 +40,30 @@ function DashboardShellInner({ children }: { children: React.ReactNode }) {
         <div className="flex flex-col items-center gap-3">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
           <p className="text-sm text-muted-foreground">Loading orgs...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const activeOrganization = orgs.find((o) => o.id === activeOrganizationId);
+  const isSuspended = activeOrganization && ['past_due', 'canceled'].includes(activeOrganization.status);
+  const isBillingPage = pathname?.startsWith('/settings/billing');
+
+  if (isSuspended && !isBillingPage) {
+    return (
+      <div className="flex h-screen flex-col items-center justify-center bg-background p-4 text-center">
+        <div className="max-w-md space-y-4 border border-destructive/20 bg-destructive/5 p-8 rounded-xl">
+          <h2 className="text-2xl font-bold text-destructive">Account Suspended</h2>
+          <p className="text-muted-foreground">
+            Your organization's subscription is currently {activeOrganization.status.replace('_', ' ')}. 
+            Please update your billing information to restore access to the platform.
+          </p>
+          <button 
+            onClick={() => router.push('/settings/billing')} 
+            className="w-full bg-primary text-primary-foreground px-4 py-2 rounded-md font-medium hover:bg-primary/90 transition-colors"
+          >
+            Go to Billing & Usage
+          </button>
         </div>
       </div>
     );

@@ -1,6 +1,11 @@
 export interface Organization {
   id: string;
   name: string;
+  industry?: string;
+  plan: string;
+  status: string;
+  trial_ends_at?: string | null;
+  onboarding_completed?: boolean;
   owner_id: string;
   created_at: string;
   updated_at: string;

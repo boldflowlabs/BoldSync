@@ -45,7 +45,7 @@ export default async function AdminDashboardPage() {
     .limit(10);
 
   // Collect active alerts
-  const alerts = [];
+  const alerts: { id: string; title: string; description: string; type: 'critical' | 'warning' | 'info' }[] = [];
   
   if (suspendedClientsData && suspendedClientsData.length > 0) {
     suspendedClientsData.forEach(org => {
@@ -63,7 +63,7 @@ export default async function AdminDashboardPage() {
       alerts.push({
         id: `waba-${waba.id}`,
         title: `Disconnected WABA`,
-        description: `${waba.organizations?.name || 'Unknown Org'} has a disconnected WABA.`,
+        description: `${(waba.organizations as any)?.name || (waba.organizations as any)?.[0]?.name || 'Unknown Org'} has a disconnected WABA.`,
         type: 'warning'
       });
     });
@@ -78,6 +78,28 @@ export default async function AdminDashboardPage() {
         type: 'info'
       });
     });
+  }
+
+  // Calculate MRR
+  const { data: activeOrgsWithPlans } = await adminClient
+    .from('organizations')
+    .select('plan, status')
+    .eq('status', 'active');
+
+  const { data: plansData } = await adminClient
+    .from('plans')
+    .select('id, monthly_price');
+
+  let mrr = 0;
+  if (activeOrgsWithPlans && plansData) {
+    const priceMap = plansData.reduce((acc, plan) => {
+      acc[plan.id] = plan.monthly_price;
+      return acc;
+    }, {} as Record<string, number>);
+
+    mrr = activeOrgsWithPlans.reduce((sum, org) => {
+      return sum + (priceMap[org.plan] || 0);
+    }, 0);
   }
 
   return (
@@ -124,8 +146,8 @@ export default async function AdminDashboardPage() {
             <CreditCard className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">₹0</div>
-            <p className="text-xs text-muted-foreground">Pending implementation</p>
+            <div className="text-2xl font-bold">${mrr.toLocaleString()}</div>
+            <p className="text-xs text-muted-foreground">Monthly Recurring Revenue</p>
           </CardContent>
         </Card>
       </div>
@@ -149,7 +171,7 @@ export default async function AdminDashboardPage() {
                         {log.event_type}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {log.organizations?.name || 'System'}
+                        {(log.organizations as any)?.name || (log.organizations as any)?.[0]?.name || 'System'}
                       </p>
                     </div>
                     <div className="text-xs text-muted-foreground">

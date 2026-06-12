@@ -78,8 +78,10 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
       </head>
       <body className="min-h-full bg-background text-foreground font-sans" suppressHydrationWarning>
+        <div className="aurora-bg" />
         <ThemeProvider>
           <TooltipProvider>
             {children}

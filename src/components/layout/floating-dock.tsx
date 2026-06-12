@@ -21,7 +21,8 @@ import {
   User,
   Building2,
   Check,
-  ShieldAlert
+  ShieldAlert,
+  CreditCard
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -185,6 +186,12 @@ export function FloatingDock() {
               <Link href="/settings" className="flex w-full items-center px-2 py-1.5 text-muted-foreground hover:text-foreground">
                 <Settings className="mr-2 h-4 w-4" />
                 <span>Settings</span>
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem className="rounded-xl cursor-pointer p-0">
+              <Link href="/settings/billing" className="flex w-full items-center px-2 py-1.5 text-muted-foreground hover:text-foreground">
+                <CreditCard className="mr-2 h-4 w-4" />
+                <span>Billing & Usage</span>
               </Link>
             </DropdownMenuItem>
             

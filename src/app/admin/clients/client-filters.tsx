@@ -7,9 +7,9 @@ export function ClientFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const handleFilterChange = (key: string, value: string) => {
+  const handleFilterChange = (key: string, value: string | null) => {
     const current = new URLSearchParams(Array.from(searchParams.entries()));
-    if (value === 'all') {
+    if (!value || value === 'all') {
       current.delete(key);
     } else {
       current.set(key, value);
